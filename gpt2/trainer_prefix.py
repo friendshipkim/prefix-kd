@@ -22,7 +22,11 @@ from tqdm.auto import tqdm, trange
 from torch.nn.utils.rnn import pad_sequence
 import random
 
-from transformers.data.data_collator import DataCollator, DataCollatorWithPadding, default_data_collator
+from transformers.data.data_collator import (
+    DataCollator,
+    DataCollatorWithPadding,
+    default_data_collator,
+)
 from transformers.file_utils import is_datasets_available, is_torch_tpu_available
 from transformers.integrations import (
     default_hp_search_backend,
@@ -36,7 +40,11 @@ from transformers.integrations import (
 )
 from transformers.modeling_auto import MODEL_FOR_QUESTION_ANSWERING_MAPPING
 from transformers.modeling_utils import PreTrainedModel
-from transformers.optimization import AdamW, get_linear_schedule_with_warmup, get_constant_schedule_with_warmup
+from transformers.optimization import (
+    AdamW,
+    get_linear_schedule_with_warmup,
+    get_constant_schedule_with_warmup,
+)
 from transformers.tokenization_utils_base import PreTrainedTokenizerBase
 from transformers.trainer_utils import (
     PREFIX_CHECKPOINT_DIR,
@@ -64,9 +72,13 @@ _use_apex = False
 EPS = 1e-12
 INIT_GUMBEL_TEMP = 5.0
 
-control_lst = ['positive', 'negative', 'neutral']
-Control_Temp = {'positive': 3967, 'negative':4633, 'neutral':8500}
-control_Map = [torch.LongTensor([3967]), torch.LongTensor([4633]), torch.LongTensor([8500])]
+control_lst = ["positive", "negative", "neutral"]
+Control_Temp = {"positive": 3967, "negative": 4633, "neutral": 8500}
+control_Map = [
+    torch.LongTensor([3967]),
+    torch.LongTensor([4633]),
+    torch.LongTensor([8500]),
+]
 sst_lst = [(0, 2), (1, 3), (4,)]
 sst_standard = ["positive", "negative", "very positive", "very negative", "neutral"]
 # Control_?Map = {j:i for i, j in enumerate(control_lst)}
@@ -126,6 +138,7 @@ def torch_distributed_zero_first(local_rank: int):
     if local_rank == 0:
         torch.distributed.barrier()
 
+
 def helper_token2bpe(offsets):
     full_lst = []
     for example_offset in offsets:
@@ -133,7 +146,7 @@ def helper_token2bpe(offsets):
         token2bpe = []
         token_idx = -1
         # print(example_offset)
-        for bpe_idx, (a,b) in enumerate(example_offset):
+        for bpe_idx, (a, b) in enumerate(example_offset):
             # print(token2bpe, a, b, bpe_idx)
             if b - a > 0:
                 if a == 0:
@@ -150,6 +163,7 @@ def helper_token2bpe(offsets):
                 bpe2token.append(None)
         full_lst.append((bpe2token, token2bpe))
     return full_lst
+
 
 class SequentialDistributedSampler(Sampler):
     """
@@ -188,7 +202,9 @@ class SequentialDistributedSampler(Sampler):
         ), f"Indices length {len(indices)} and total size {self.total_size} mismatched"
 
         # subsample
-        indices = indices[self.rank * self.num_samples : (self.rank + 1) * self.num_samples]
+        indices = indices[
+            self.rank * self.num_samples : (self.rank + 1) * self.num_samples
+        ]
         assert (
             len(indices) == self.num_samples
         ), f"Indices length {len(indices)} and sample number {self.num_samples} mismatched"
@@ -202,7 +218,9 @@ class SequentialDistributedSampler(Sampler):
 def get_tpu_sampler(dataset: Dataset):
     if xm.xrt_world_size() <= 1:
         return RandomSampler(dataset)
-    return DistributedSampler(dataset, num_replicas=xm.xrt_world_size(), rank=xm.get_ordinal())
+    return DistributedSampler(
+        dataset, num_replicas=xm.xrt_world_size(), rank=xm.get_ordinal()
+    )
 
 
 class Trainer_Prefix:
@@ -249,7 +267,7 @@ class Trainer_Prefix:
     def __init__(
         self,
         model: Optional[PreTrainedModel] = None,
-        model_gpt2 : Optional[PreTrainedModel] = None,
+        model_gpt2: Optional[PreTrainedModel] = None,
         args: TrainingArguments = None,
         data_collator: Optional[DataCollator] = None,
         train_dataset: Optional[Dataset] = None,
@@ -258,16 +276,21 @@ class Trainer_Prefix:
         model_init: Callable[[], PreTrainedModel] = None,
         compute_metrics: Optional[Callable[[EvalPrediction], Dict]] = None,
         tb_writer: Optional["SummaryWriter"] = None,
-        optimizers: Tuple[torch.optim.Optimizer, torch.optim.lr_scheduler.LambdaLR] = (None, None),
+        optimizers: Tuple[torch.optim.Optimizer, torch.optim.lr_scheduler.LambdaLR] = (
+            None,
+            None,
+        ),
         task_mode: Optional[str] = None,
         use_dropout: Optional[bool] = False,
         distill: Optional[bool] = False,
-        matching_objective:Optional[str]= None,
+        matching_objective: Optional[str] = None,
         finetuned_gpt2: Optional[PreTrainedModel] = None,
         **kwargs,
     ):
         if args is None:
-            logger.info("No `TrainingArguments` passed, using the current path as `output_dir`.")
+            logger.info(
+                "No `TrainingArguments` passed, using the current path as `output_dir`."
+            )
             args = TrainingArguments("tmp_trainer")
         self.args = args
         # Seed must be set before instantiating the model when using model
@@ -278,8 +301,14 @@ class Trainer_Prefix:
         assert model_init is None
         self.model = model.to(args.device) if model is not None else None
         self.gpt2 = model_gpt2.to(args.device) if model_gpt2 is not None else None
-        default_collator = default_data_collator if tokenizer is None else DataCollatorWithPadding(tokenizer)
-        self.data_collator = data_collator if data_collator is not None else default_collator
+        default_collator = (
+            default_data_collator
+            if tokenizer is None
+            else DataCollatorWithPadding(tokenizer)
+        )
+        self.data_collator = (
+            data_collator if data_collator is not None else default_collator
+        )
         self.train_dataset = train_dataset
         self.eval_dataset = eval_dataset
         self.tokenizer = tokenizer
@@ -289,14 +318,16 @@ class Trainer_Prefix:
         self.task_mode = task_mode
         self.use_dropout = use_dropout
 
-        self.curr_best_eval = 10000000.
+        self.curr_best_eval = 10000000.0
 
         self.distill = distill
         if self.distill:
             self.matching_objective = matching_objective
             self.finetuned_gpt2 = finetuned_gpt2
 
-        if model_init is not None and (self.optimizer is not None or self.lr_scheduler is not None):
+        if model_init is not None and (
+            self.optimizer is not None or self.lr_scheduler is not None
+        ):
             raise RuntimeError(
                 "Passing a `model_init` is incompatible with providing the `optimizers` argument."
                 "You should subclass `Trainer` and override the `create_optimizer_and_scheduler` method."
@@ -311,7 +342,11 @@ class Trainer_Prefix:
             self.args.prediction_loss_only = kwargs.pop("prediction_loss_only")
         assert kwargs == {}, f"Unexpected keyword arguments: {list(kwargs.keys())}."
 
-        if tb_writer is None and is_tensorboard_available() and self.is_world_process_zero():
+        if (
+            tb_writer is None
+            and is_tensorboard_available()
+            and self.is_world_process_zero()
+        ):
             self.tb_writer = SummaryWriter(log_dir=self.args.logging_dir)
         if not is_tensorboard_available():
             logger.warning(
@@ -328,7 +363,9 @@ class Trainer_Prefix:
             # Set an xla_device flag on the model's config.
             # We'll find a more elegant and not need to do this in the future.
             self.model.config.xla_device = True
-        if not callable(self.data_collator) and callable(getattr(self.data_collator, "collate_batch", None)):
+        if not callable(self.data_collator) and callable(
+            getattr(self.data_collator, "collate_batch", None)
+        ):
             self.data_collator = self.data_collator.collate_batch
             warnings.warn(
                 (
@@ -358,7 +395,9 @@ class Trainer_Prefix:
                 else ["labels"]
             )
 
-    def _remove_unused_columns(self, dataset: "datasets.Dataset", description: Optional[str] = None):
+    def _remove_unused_columns(
+        self, dataset: "datasets.Dataset", description: Optional[str] = None
+    ):
         if not self.args.remove_unused_columns:
             return
         # Inspect model forward signature to keep only the arguments it accepts.
@@ -406,14 +445,18 @@ class Trainer_Prefix:
             collate_fn=self.data_collator,
             drop_last=self.args.dataloader_drop_last,
             num_workers=self.args.dataloader_num_workers,
-            worker_init_fn=np.random.seed(self.args.seed)
+            worker_init_fn=np.random.seed(self.args.seed),
         )
 
-    def _get_eval_sampler(self, eval_dataset: Dataset) -> Optional[torch.utils.data.sampler.Sampler]:
+    def _get_eval_sampler(
+        self, eval_dataset: Dataset
+    ) -> Optional[torch.utils.data.sampler.Sampler]:
         if isinstance(eval_dataset, torch.utils.data.IterableDataset):
             return None
         elif is_torch_tpu_available():
-            return SequentialDistributedSampler(eval_dataset, num_replicas=xm.xrt_world_size(), rank=xm.get_ordinal())
+            return SequentialDistributedSampler(
+                eval_dataset, num_replicas=xm.xrt_world_size(), rank=xm.get_ordinal()
+            )
         elif self.args.local_rank != -1:
             return SequentialDistributedSampler(eval_dataset)
         else:
@@ -435,7 +478,11 @@ class Trainer_Prefix:
         """
         if eval_dataset is None and self.eval_dataset is None:
             raise ValueError("Trainer: evaluation requires an eval_dataset.")
-        elif eval_dataset is not None and is_datasets_available() and isinstance(eval_dataset, datasets.Dataset):
+        elif (
+            eval_dataset is not None
+            and is_datasets_available()
+            and isinstance(eval_dataset, datasets.Dataset)
+        ):
             self._remove_unused_columns(eval_dataset, description="evaluation")
         eval_dataset = eval_dataset if eval_dataset is not None else self.eval_dataset
         eval_sampler = self._get_eval_sampler(eval_dataset)
@@ -447,7 +494,7 @@ class Trainer_Prefix:
             collate_fn=self.data_collator,
             drop_last=self.args.dataloader_drop_last,
             num_workers=self.args.dataloader_num_workers,
-            worker_init_fn=np.random.seed(self.args.seed)
+            worker_init_fn=np.random.seed(self.args.seed),
         )
 
     def get_test_dataloader(self, test_dataset: Dataset) -> DataLoader:
@@ -475,7 +522,7 @@ class Trainer_Prefix:
             batch_size=self.args.eval_batch_size,
             collate_fn=self.data_collator,
             drop_last=self.args.dataloader_drop_last,
-            worker_init_fn=np.random.seed(self.args.seed)
+            worker_init_fn=np.random.seed(self.args.seed),
         )
 
     def create_optimizer_and_scheduler(self, num_training_steps: int):
@@ -488,14 +535,22 @@ class Trainer_Prefix:
         if self.optimizer is None:
             no_decay = ["bias", "LayerNorm.weight"]
             optimizer_grouped_parameters = [
-            {
-                "params": [p for n, p in self.model.named_parameters() if (not any(nd in n for nd in no_decay)) and p.requires_grad],
-                "weight_decay": self.args.weight_decay,
-            },
-            {
-                "params": [p for n, p in self.model.named_parameters() if any(nd in n for nd in no_decay) and p.requires_grad],
-                "weight_decay": 0.0,
-            },
+                {
+                    "params": [
+                        p
+                        for n, p in self.model.named_parameters()
+                        if (not any(nd in n for nd in no_decay)) and p.requires_grad
+                    ],
+                    "weight_decay": self.args.weight_decay,
+                },
+                {
+                    "params": [
+                        p
+                        for n, p in self.model.named_parameters()
+                        if any(nd in n for nd in no_decay) and p.requires_grad
+                    ],
+                    "weight_decay": 0.0,
+                },
             ]
 
             self.optimizer = AdamW(
@@ -505,15 +560,15 @@ class Trainer_Prefix:
                 eps=self.args.adam_epsilon,
             )
 
-
             # for n, p in self.model.named_parameters():
             #     print(n,p.requires_grad)
             print(self.optimizer.state_dict())
         if self.lr_scheduler is None:
             self.lr_scheduler = get_linear_schedule_with_warmup(
-                self.optimizer, num_warmup_steps=self.args.warmup_steps, num_training_steps=num_training_steps
+                self.optimizer,
+                num_warmup_steps=self.args.warmup_steps,
+                num_training_steps=num_training_steps,
             )
-
 
     def setup_wandb(self):
         """
@@ -543,17 +598,24 @@ class Trainer_Prefix:
                 'Automatic Weights & Biases logging enabled, to disable set os.environ["WANDB_DISABLED"] = "true"'
             )
             try:
-                combined_dict = {**self.model.config.to_dict(), **self.args.to_sanitized_dict()}
+                combined_dict = {
+                    **self.model.config.to_dict(),
+                    **self.args.to_sanitized_dict(),
+                }
             except AttributeError:
                 # in case the model has no config
                 combined_dict = {**self.args.to_sanitized_dict()}
             wandb.init(
-                project=os.getenv("WANDB_PROJECT", "huggingface"), config=combined_dict, name=self.args.run_name
+                project=os.getenv("WANDB_PROJECT", "prefix-kd"),
+                config=combined_dict,
+                name=self.args.run_name,
             )
             # keep track of model topology and gradients, unsupported on TPU
             if not is_torch_tpu_available() and os.getenv("WANDB_WATCH") != "false":
                 wandb.watch(
-                    self.model, log=os.getenv("WANDB_WATCH", "gradients"), log_freq=max(100, self.args.logging_steps)
+                    self.model,
+                    log=os.getenv("WANDB_WATCH", "gradients"),
+                    log_freq=max(100, self.args.logging_steps),
                 )
 
     def setup_comet(self):
@@ -581,11 +643,17 @@ class Trainer_Prefix:
             elif comet_mode == "OFFLINE":
                 args["offline_directory"] = os.getenv("COMET_OFFLINE_DIRECTORY", "./")
                 experiment = comet_ml.OfflineExperiment(**args)
-                logger.info("Automatic Comet.ml offline logging enabled; use `comet upload` when finished")
+                logger.info(
+                    "Automatic Comet.ml offline logging enabled; use `comet upload` when finished"
+                )
             if experiment is not None:
                 experiment._set_model_graph(self.model, framework="transformers")
-                experiment._log_parameters(self.args, prefix="args/", framework="transformers")
-                experiment._log_parameters(self.model.config, prefix="config/", framework="transformers")
+                experiment._log_parameters(
+                    self.args, prefix="args/", framework="transformers"
+                )
+                experiment._log_parameters(
+                    self.model.config, prefix="config/", framework="transformers"
+                )
 
     def num_examples(self, dataloader: DataLoader) -> int:
         """
@@ -613,10 +681,14 @@ class Trainer_Prefix:
         self._loggers_initialized = True
 
     def _hp_search_setup(self, trial: Union["optuna.Trial", Dict[str, Any]]):
-        """ HP search setup code """
+        """HP search setup code"""
         if self.hp_search_backend is None or trial is None:
             return
-        params = self.hp_space(trial) if self.hp_search_backend == HPSearchBackend.OPTUNA else trial
+        params = (
+            self.hp_space(trial)
+            if self.hp_search_backend == HPSearchBackend.OPTUNA
+            else trial
+        )
         for key, value in params.items():
             if not hasattr(self.args, key):
                 raise AttributeError(
@@ -631,7 +703,10 @@ class Trainer_Prefix:
             logger.info("Trial:", trial.params)
 
     def _report_to_hp_search(
-        self, trial: Union["optuna.Trial", Dict[str, Any]], epoch: int, metrics: Dict[str, float]
+        self,
+        trial: Union["optuna.Trial", Dict[str, Any]],
+        epoch: int,
+        metrics: Dict[str, float],
     ):
         if self.hp_search_backend is None or trial is None:
             return
@@ -650,14 +725,25 @@ class Trainer_Prefix:
             return
         with tune.checkpoint_dir(step=self.global_step) as checkpoint_dir:
             self.args.output_dir = checkpoint_dir
-            output_dir = os.path.join(self.args.output_dir, f"{PREFIX_CHECKPOINT_DIR}-{self.global_step}")
+            output_dir = os.path.join(
+                self.args.output_dir, f"{PREFIX_CHECKPOINT_DIR}-{self.global_step}"
+            )
             self.save_model(output_dir)
             if self.is_world_master():
-                torch.save(self.optimizer.state_dict(), os.path.join(output_dir, "optimizer.pt"))
-                torch.save(self.lr_scheduler.state_dict(), os.path.join(output_dir, "scheduler.pt"))
+                torch.save(
+                    self.optimizer.state_dict(),
+                    os.path.join(output_dir, "optimizer.pt"),
+                )
+                torch.save(
+                    self.lr_scheduler.state_dict(),
+                    os.path.join(output_dir, "scheduler.pt"),
+                )
 
-
-    def train(self, model_path: Optional[str] = None, trial: Union["optuna.Trial", Dict[str, Any]] = None):
+    def train(
+        self,
+        model_path: Optional[str] = None,
+        trial: Union["optuna.Trial", Dict[str, Any]] = None,
+    ):
         """
         Main training entry point.
 
@@ -683,7 +769,9 @@ class Trainer_Prefix:
 
         # Data loader and number of training steps
         train_dataloader = self.get_train_dataloader()
-        num_update_steps_per_epoch = len(train_dataloader) // self.args.gradient_accumulation_steps
+        num_update_steps_per_epoch = (
+            len(train_dataloader) // self.args.gradient_accumulation_steps
+        )
         num_update_steps_per_epoch = max(num_update_steps_per_epoch, 1)
         if self.args.max_steps > 0:
             t_total = self.args.max_steps
@@ -705,15 +793,24 @@ class Trainer_Prefix:
         ):
             # Load in optimizer and scheduler states
             self.optimizer.load_state_dict(
-                torch.load(os.path.join(model_path, "optimizer.pt"), map_location=self.args.device)
+                torch.load(
+                    os.path.join(model_path, "optimizer.pt"),
+                    map_location=self.args.device,
+                )
             )
-            self.lr_scheduler.load_state_dict(torch.load(os.path.join(model_path, "scheduler.pt")))
+            self.lr_scheduler.load_state_dict(
+                torch.load(os.path.join(model_path, "scheduler.pt"))
+            )
 
         model = self.model
         if self.args.fp16 and _use_apex:
             if not is_apex_available():
-                raise ImportError("Please install apex from https://www.github.com/nvidia/apex to use fp16 training.")
-            model, self.optimizer = amp.initialize(model, self.optimizer, opt_level=self.args.fp16_opt_level)
+                raise ImportError(
+                    "Please install apex from https://www.github.com/nvidia/apex to use fp16 training."
+                )
+            model, self.optimizer = amp.initialize(
+                model, self.optimizer, opt_level=self.args.fp16_opt_level
+            )
 
         # multi-gpu training (should be after apex fp16 initialization)
         if self.args.n_gpu > 1:
@@ -739,14 +836,26 @@ class Trainer_Prefix:
             total_train_batch_size = (
                 self.args.train_batch_size
                 * self.args.gradient_accumulation_steps
-                * (torch.distributed.get_world_size() if self.args.local_rank != -1 else 1)
+                * (
+                    torch.distributed.get_world_size()
+                    if self.args.local_rank != -1
+                    else 1
+                )
             )
         logger.info("***** Running training *****")
         logger.info("  Num examples = %d", self.num_examples(train_dataloader))
         logger.info("  Num Epochs = %d", num_train_epochs)
-        logger.info("  Instantaneous batch size per device = %d", self.args.per_device_train_batch_size)
-        logger.info("  Total train batch size (w. parallel, distributed & accumulation) = %d", total_train_batch_size)
-        logger.info("  Gradient Accumulation steps = %d", self.args.gradient_accumulation_steps)
+        logger.info(
+            "  Instantaneous batch size per device = %d",
+            self.args.per_device_train_batch_size,
+        )
+        logger.info(
+            "  Total train batch size (w. parallel, distributed & accumulation) = %d",
+            total_train_batch_size,
+        )
+        logger.info(
+            "  Gradient Accumulation steps = %d", self.args.gradient_accumulation_steps
+        )
         logger.info("  Total optimization steps = %d", t_total)
 
         self.global_step = 0
@@ -766,13 +875,25 @@ class Trainer_Prefix:
                     self.total_flos = getattr(model.config, "total_flos", 0)
 
                 epochs_trained = self.global_step // num_update_steps_per_epoch
-                steps_trained_in_current_epoch = self.global_step % (num_update_steps_per_epoch)
+                steps_trained_in_current_epoch = self.global_step % (
+                    num_update_steps_per_epoch
+                )
 
-                logger.info("  Continuing training from checkpoint, will skip to saved global_step")
+                logger.info(
+                    "  Continuing training from checkpoint, will skip to saved global_step"
+                )
                 logger.info("  Continuing training from epoch %d", epochs_trained)
-                logger.info("  Continuing training from global step %d", self.global_step)
-                logger.info("  Continuing training from %d non-embedding floating-point operations", self.total_flos)
-                logger.info("  Will skip the first %d steps in the first epoch", steps_trained_in_current_epoch)
+                logger.info(
+                    "  Continuing training from global step %d", self.global_step
+                )
+                logger.info(
+                    "  Continuing training from %d non-embedding floating-point operations",
+                    self.total_flos,
+                )
+                logger.info(
+                    "  Will skip the first %d steps in the first epoch",
+                    steps_trained_in_current_epoch,
+                )
             except ValueError:
                 self.global_step = 0
                 self.total_flos = 0
@@ -782,15 +903,22 @@ class Trainer_Prefix:
         logging_loss_scalar = 0.0
         model.zero_grad()
         disable_tqdm = self.args.disable_tqdm or not self.is_local_process_zero()
-        train_pbar = trange(epochs_trained, int(np.ceil(num_train_epochs)), desc="Epoch", disable=disable_tqdm)
+        train_pbar = trange(
+            epochs_trained,
+            int(np.ceil(num_train_epochs)),
+            desc="Epoch",
+            disable=disable_tqdm,
+        )
         for epoch in range(epochs_trained, int(np.ceil(num_train_epochs))):
-            if isinstance(train_dataloader, DataLoader) and isinstance(train_dataloader.sampler, DistributedSampler):
+            if isinstance(train_dataloader, DataLoader) and isinstance(
+                train_dataloader.sampler, DistributedSampler
+            ):
                 train_dataloader.sampler.set_epoch(epoch)
 
             if is_torch_tpu_available():
-                parallel_loader = pl.ParallelLoader(train_dataloader, [self.args.device]).per_device_loader(
-                    self.args.device
-                )
+                parallel_loader = pl.ParallelLoader(
+                    train_dataloader, [self.args.device]
+                ).per_device_loader(self.args.device)
                 epoch_iterator = parallel_loader
             else:
                 epoch_iterator = train_dataloader
@@ -801,7 +929,6 @@ class Trainer_Prefix:
 
             epoch_pbar = tqdm(epoch_iterator, desc="Iteration", disable=disable_tqdm)
             for step, inputs in enumerate(epoch_iterator):
-
                 # Skip past any already trained steps if resuming training
                 if steps_trained_in_current_epoch > 0:
                     steps_trained_in_current_epoch -= 1
@@ -819,11 +946,17 @@ class Trainer_Prefix:
                 ):
                     if self.args.fp16 and _use_native_amp:
                         self.scaler.unscale_(self.optimizer)
-                        torch.nn.utils.clip_grad_norm_(model.parameters(), self.args.max_grad_norm)
+                        torch.nn.utils.clip_grad_norm_(
+                            model.parameters(), self.args.max_grad_norm
+                        )
                     elif self.args.fp16 and _use_apex:
-                        torch.nn.utils.clip_grad_norm_(amp.master_params(self.optimizer), self.args.max_grad_norm)
+                        torch.nn.utils.clip_grad_norm_(
+                            amp.master_params(self.optimizer), self.args.max_grad_norm
+                        )
                     else:
-                        torch.nn.utils.clip_grad_norm_(model.parameters(), self.args.max_grad_norm)
+                        torch.nn.utils.clip_grad_norm_(
+                            model.parameters(), self.args.max_grad_norm
+                        )
 
                     if is_torch_tpu_available():
                         xm.optimizer_step(self.optimizer)
@@ -839,13 +972,15 @@ class Trainer_Prefix:
                     self.global_step += 1
                     self.epoch = epoch + (step + 1) / len(epoch_iterator)
 
-
-                    if (self.args.logging_steps > 0 and self.global_step % self.args.logging_steps == 0) or (
-                        self.global_step == 1 and self.args.logging_first_step
-                    ):
+                    if (
+                        self.args.logging_steps > 0
+                        and self.global_step % self.args.logging_steps == 0
+                    ) or (self.global_step == 1 and self.args.logging_first_step):
                         logs: Dict[str, float] = {}
                         tr_loss_scalar = tr_loss.item()
-                        logs["loss"] = (tr_loss_scalar - logging_loss_scalar) / self.args.logging_steps
+                        logs["loss"] = (
+                            tr_loss_scalar - logging_loss_scalar
+                        ) / self.args.logging_steps
                         # backward compatibility for pytorch schedulers
                         logs["learning_rate"] = (
                             self.lr_scheduler.get_last_lr()[0]
@@ -868,21 +1003,36 @@ class Trainer_Prefix:
                         self._report_to_hp_search(trial, epoch, metrics)
 
                         #############################EARLY STOPPING########################
-                        if 'lowdata' in self.args.output_dir or 'earlystop' in self.args.output_dir:
+                        if (
+                            "lowdata" in self.args.output_dir
+                            or "earlystop" in self.args.output_dir
+                        ):
                             self.save_based_on_eval = True
                         else:
                             self.save_based_on_eval = False
-                        print('if not see a line lowdata: below, then did not go into low data. ')
-                        if self.save_based_on_eval and metrics["eval_loss"] < self.curr_best_eval:
-                            print('lowdata:', self.global_step, self.curr_best_eval, metrics["eval_loss"],
-                                  'perplexity={}'.format(math.exp(metrics["eval_loss"])))
+                        print(
+                            "if not see a line lowdata: below, then did not go into low data. "
+                        )
+                        if (
+                            self.save_based_on_eval
+                            and metrics["eval_loss"] < self.curr_best_eval
+                        ):
+                            print(
+                                "lowdata:",
+                                self.global_step,
+                                self.curr_best_eval,
+                                metrics["eval_loss"],
+                                "perplexity={}".format(math.exp(metrics["eval_loss"])),
+                            )
                             self.curr_best_eval = metrics["eval_loss"]
                             if hasattr(model, "module"):
                                 assert (
-                                        model.module is self.model
+                                    model.module is self.model
                                 ), f"Module {model.module} should be a reference to self.model"
                             else:
-                                assert model is self.model, f"Model {model} should be a reference to self.model"
+                                assert (
+                                    model is self.model
+                                ), f"Model {model} should be a reference to self.model"
                             # Save model checkpoint
                             output_dir_name = os.path.basename(self.args.output_dir)
                             checkpoint_folder = f"{output_dir_name}-{PREFIX_CHECKPOINT_DIR}-{self.global_step}"
@@ -893,18 +1043,23 @@ class Trainer_Prefix:
                                     else tune.get_trial_id()
                                 )
                                 checkpoint_folder += f"-run-{run_id}"
-                            output_dir = os.path.join(self.args.output_dir, checkpoint_folder)
+                            output_dir = os.path.join(
+                                self.args.output_dir, checkpoint_folder
+                            )
 
                             self.store_flos()
-                            print('saving to output_dir', output_dir)
+                            print("saving to output_dir", output_dir)
                             self.save_model(output_dir)
 
                             if self.is_world_process_zero():
                                 self._rotate_checkpoints(use_mtime=True)
                         #####################################################
 
-                    if self.args.save_steps > 0 and self.global_step % self.args.save_steps == 0:
-                        print('saving model at a checkpoint!!')
+                    if (
+                        self.args.save_steps > 0
+                        and self.global_step % self.args.save_steps == 0
+                    ):
+                        print("saving model at a checkpoint!!")
                         # In all cases (even distributed/parallel), self.model is always a reference
                         # to the model we want to save.
                         if hasattr(model, "module"):
@@ -912,9 +1067,13 @@ class Trainer_Prefix:
                                 model.module is self.model
                             ), f"Module {model.module} should be a reference to self.model"
                         else:
-                            assert model is self.model, f"Model {model} should be a reference to self.model"
+                            assert (
+                                model is self.model
+                            ), f"Model {model} should be a reference to self.model"
                         # Save model checkpoint
-                        checkpoint_folder = f"{PREFIX_CHECKPOINT_DIR}-{self.global_step}"
+                        checkpoint_folder = (
+                            f"{PREFIX_CHECKPOINT_DIR}-{self.global_step}"
+                        )
                         if self.hp_search_backend is not None and trial is not None:
                             run_id = (
                                 trial.number
@@ -922,7 +1081,9 @@ class Trainer_Prefix:
                                 else tune.get_trial_id()
                             )
                             checkpoint_folder += f"-run-{run_id}"
-                        output_dir = os.path.join(self.args.output_dir, checkpoint_folder)
+                        output_dir = os.path.join(
+                            self.args.output_dir, checkpoint_folder
+                        )
 
                         self.store_flos()
 
@@ -933,11 +1094,23 @@ class Trainer_Prefix:
 
                         if is_torch_tpu_available():
                             xm.rendezvous("saving_optimizer_states")
-                            xm.save(self.optimizer.state_dict(), os.path.join(output_dir, "optimizer.pt"))
-                            xm.save(self.lr_scheduler.state_dict(), os.path.join(output_dir, "scheduler.pt"))
+                            xm.save(
+                                self.optimizer.state_dict(),
+                                os.path.join(output_dir, "optimizer.pt"),
+                            )
+                            xm.save(
+                                self.lr_scheduler.state_dict(),
+                                os.path.join(output_dir, "scheduler.pt"),
+                            )
                         elif self.is_world_process_zero():
-                            torch.save(self.optimizer.state_dict(), os.path.join(output_dir, "optimizer.pt"))
-                            torch.save(self.lr_scheduler.state_dict(), os.path.join(output_dir, "scheduler.pt"))
+                            torch.save(
+                                self.optimizer.state_dict(),
+                                os.path.join(output_dir, "optimizer.pt"),
+                            )
+                            torch.save(
+                                self.lr_scheduler.state_dict(),
+                                os.path.join(output_dir, "scheduler.pt"),
+                            )
 
                 epoch_pbar.update(1)
                 if self.args.max_steps > 0 and self.global_step >= self.args.max_steps:
@@ -968,7 +1141,9 @@ class Trainer_Prefix:
             # Clean the state at the end of training
             delattr(self, "_past")
 
-        logger.info("\n\nTraining completed. Do not forget to share your model on huggingface.co/models =)\n\n")
+        logger.info(
+            "\n\nTraining completed. Do not forget to share your model on huggingface.co/models =)\n\n"
+        )
         return TrainOutput(self.global_step, tr_loss.item() / self.global_step)
 
     def hyperparameter_search(
@@ -978,7 +1153,7 @@ class Trainer_Prefix:
         n_trials: int = 20,
         direction: str = "minimize",
         backend: Optional[Union["str", HPSearchBackend]] = None,
-        **kwargs
+        **kwargs,
     ) -> BestRun:
         """
         Launch an hyperparameter search using ``optuna`` or ``Ray Tune``. The optimized quantity is determined by
@@ -1029,7 +1204,9 @@ class Trainer_Prefix:
                 )
         backend = HPSearchBackend(backend)
         if backend == HPSearchBackend.OPTUNA and not is_optuna_available():
-            raise RuntimeError("You picked the optuna backend, but it is not installed. Use `pip install optuna`.")
+            raise RuntimeError(
+                "You picked the optuna backend, but it is not installed. Use `pip install optuna`."
+            )
         if backend == HPSearchBackend.RAY and not is_ray_available():
             raise RuntimeError(
                 "You picked the Ray Tune backend, but it is not installed. Use `pip install 'ray[tune]'`."
@@ -1042,9 +1219,17 @@ class Trainer_Prefix:
             )
 
         self.hp_space = default_hp_space[backend] if hp_space is None else hp_space
-        self.compute_objective = default_compute_objective if compute_objective is None else compute_objective
+        self.compute_objective = (
+            default_compute_objective
+            if compute_objective is None
+            else compute_objective
+        )
 
-        run_hp_search = run_hp_search_optuna if backend == HPSearchBackend.OPTUNA else run_hp_search_ray
+        run_hp_search = (
+            run_hp_search_optuna
+            if backend == HPSearchBackend.OPTUNA
+            else run_hp_search_ray
+        )
         best_run = run_hp_search(self, n_trials, direction, **kwargs)
 
         self.hp_search_backend = None
@@ -1076,7 +1261,9 @@ class Trainer_Prefix:
             logs["epoch"] = self.epoch
         if self.total_flos is not None:
             if self.args.local_rank != -1:
-                total_flos = distributed_broadcast_scalars([self.total_flos]).sum().item()
+                total_flos = (
+                    distributed_broadcast_scalars([self.total_flos]).sum().item()
+                )
             else:
                 total_flos = self.total_flos
             if total_flos > 0:
@@ -1106,7 +1293,12 @@ class Trainer_Prefix:
             if self.is_world_process_zero():
                 experiment = comet_ml.config.get_global_experiment()
                 if experiment is not None:
-                    experiment._log_metrics(logs, step=self.global_step, epoch=self.epoch, framework="transformers")
+                    experiment._log_metrics(
+                        logs,
+                        step=self.global_step,
+                        epoch=self.epoch,
+                        framework="transformers",
+                    )
         output = {**logs, **{"step": self.global_step}}
         if self.is_world_process_zero():
             self.log_history.append(output)
@@ -1115,7 +1307,9 @@ class Trainer_Prefix:
         else:
             print(output)
 
-    def _prepare_inputs(self, inputs: Dict[str, Union[torch.Tensor, Any]]) -> Dict[str, Union[torch.Tensor, Any]]:
+    def _prepare_inputs(
+        self, inputs: Dict[str, Union[torch.Tensor, Any]]
+    ) -> Dict[str, Union[torch.Tensor, Any]]:
         """
         Prepare :obj:`inputs` before feeding them to the model, converting them to tensors if they are not already and
         handling potential state.
@@ -1125,12 +1319,14 @@ class Trainer_Prefix:
                 inputs[k] = v.to(self.args.device)
 
         if self.args.past_index >= 0 and self._past is not None:
-            assert  False
+            assert False
             inputs["mems"] = self._past
 
         return inputs
 
-    def training_step(self, model: nn.Module, inputs: Dict[str, Union[torch.Tensor, Any]]) -> torch.Tensor:
+    def training_step(
+        self, model: nn.Module, inputs: Dict[str, Union[torch.Tensor, Any]]
+    ) -> torch.Tensor:
         """
         Perform a training step on a batch of inputs.
 
@@ -1164,7 +1360,11 @@ class Trainer_Prefix:
         if self.args.fp16 and _use_native_amp:
             with autocast():
                 if self.distill:
-                    loss = self.compute_loss_distill(model, inputs, gpt2_model=self.gpt2, )
+                    loss = self.compute_loss_distill(
+                        model,
+                        inputs,
+                        gpt2_model=self.gpt2,
+                    )
                 else:
                     loss = self.compute_loss(model, inputs, gpt2_model=self.gpt2)
         else:
@@ -1191,12 +1391,7 @@ class Trainer_Prefix:
         # print('max allocated_memory:', torch.cuda.max_memory_allocated(0), 'total_memory:', torch.cuda.get_device_properties(0).total_memory,
         #       'percentage', torch.cuda.max_memory_allocated(0)/torch.cuda.get_device_properties(0).total_memory)
 
-
         return loss.detach()
-
-
-
-
 
     def compute_loss(self, model, inputs, gpt2_model=None):
         """
@@ -1205,11 +1400,11 @@ class Trainer_Prefix:
         Subclass and override for custom behavior.
         """
         # outputs = model.forward_weighted(**inputs)
-        if 'prompt_lab' in inputs:
-            prompt_lab_ = inputs['prompt_lab']
+        if "prompt_lab" in inputs:
+            prompt_lab_ = inputs["prompt_lab"]
             k = torch.cat(self.discri_labels_code, dim=0)
-            inputs['control_code'] = torch.index_select(k, 0, prompt_lab_)
-            del inputs['prompt_lab']
+            inputs["control_code"] = torch.index_select(k, 0, prompt_lab_)
+            del inputs["prompt_lab"]
 
         outputs = model(**inputs, gpt2_model=gpt2_model)
         # Save past state if it exists
@@ -1239,23 +1434,33 @@ class Trainer_Prefix:
         if self.args.past_index >= 0:
             self._past = outputs[self.args.past_index]
 
-        if self.matching_objective == 'kl':
+        if self.matching_objective == "kl":
             # distrib_finetuned=torch.log_softmax(output_finetuned.logits[:,:,:-2], dim=-1)  #bsz, seqlen, vocab
-            distrib_finetuned=torch.log_softmax(output_finetuned.logits, dim=-1)  #bsz, seqlen, vocab
-            distrib_prefix = torch.log_softmax(outputs.logits, dim=-1)  # bsz, seqlen, vocab
-            loss = torch.sum(distrib_finetuned.exp() * (distrib_finetuned - distrib_prefix), dim=-1) #bsz, seqlen
+            distrib_finetuned = torch.log_softmax(
+                output_finetuned.logits, dim=-1
+            )  # bsz, seqlen, vocab
+            distrib_prefix = torch.log_softmax(
+                outputs.logits, dim=-1
+            )  # bsz, seqlen, vocab
+            loss = torch.sum(
+                distrib_finetuned.exp() * (distrib_finetuned - distrib_prefix), dim=-1
+            )  # bsz, seqlen
 
-        elif self.matching_objective == 'logits':
-            loss = torch.norm(output_finetuned.logits - outputs.logits, dim=-1)  #bsz, seqlen
+        elif self.matching_objective == "logits":
+            loss = torch.norm(
+                output_finetuned.logits - outputs.logits, dim=-1
+            )  # bsz, seqlen
             # loss = torch.norm(output_finetuned.logits[:,:,:-2] - outputs.logits, dim=-1)  #bsz, seqlen
 
-        elif self.matching_objective == 'last_layer':
-            activation_diff = output_finetuned.last_hidden_state - outputs.last_hidden_state
+        elif self.matching_objective == "last_layer":
+            activation_diff = (
+                output_finetuned.last_hidden_state - outputs.last_hidden_state
+            )
             loss = torch.norm(activation_diff, dim=-1)  # bsz, seqlen
         else:
             assert False, "invalid matching_objective"
 
-        return  loss.sum(dim=-1).mean()
+        return loss.sum(dim=-1).mean()
 
     def is_local_master(self) -> bool:
         """
@@ -1266,7 +1471,10 @@ class Trainer_Prefix:
 
             This method is deprecated, use :meth:`~transformers.Trainer.is_local_process_zero` instead.
         """
-        warnings.warn("This method is deprecated, use `Trainer.is_local_process_zero()` instead.", FutureWarning)
+        warnings.warn(
+            "This method is deprecated, use `Trainer.is_local_process_zero()` instead.",
+            FutureWarning,
+        )
         return self.is_local_process_zero()
 
     def is_local_process_zero(self) -> bool:
@@ -1288,7 +1496,10 @@ class Trainer_Prefix:
 
             This method is deprecated, use :meth:`~transformers.Trainer.is_world_process_zero` instead.
         """
-        warnings.warn("This method is deprecated, use `Trainer.is_world_process_zero()` instead.", FutureWarning)
+        warnings.warn(
+            "This method is deprecated, use `Trainer.is_world_process_zero()` instead.",
+            FutureWarning,
+        )
         return self.is_world_process_zero()
 
     def is_world_process_zero(self) -> bool:
@@ -1321,7 +1532,10 @@ class Trainer_Prefix:
             os.makedirs(output_dir, exist_ok=True)
             torch.save(self.args, os.path.join(output_dir, "training_args.bin"))
             json.dump(
-                self.log_history, open(os.path.join(output_dir, "log_history.json"), "w"), indent=2, ensure_ascii=False
+                self.log_history,
+                open(os.path.join(output_dir, "log_history.json"), "w"),
+                indent=2,
+                ensure_ascii=False,
             )
 
         # Save a trained model and configuration using `save_pretrained()`.
@@ -1349,26 +1563,35 @@ class Trainer_Prefix:
         # Good practice: save your training arguments together with the trained model
         torch.save(self.args, os.path.join(output_dir, "training_args.bin"))
         json.dump(
-            self.log_history, open(os.path.join(output_dir, "log_history.json"), "w"), indent=2, ensure_ascii=False
+            self.log_history,
+            open(os.path.join(output_dir, "log_history.json"), "w"),
+            indent=2,
+            ensure_ascii=False,
         )
 
     def store_flos(self):
         # Storing the number of floating-point operations that went into the model
         if self.total_flos is not None:
             if self.args.local_rank != -1:
-                total_flos = distributed_broadcast_scalars([self.total_flos]).sum().item()
+                total_flos = (
+                    distributed_broadcast_scalars([self.total_flos]).sum().item()
+                )
             else:
                 total_flos = self.total_flos
             if total_flos > 0:
                 self.model.config.total_flos = total_flos
 
-    def _sorted_checkpoints(self, checkpoint_prefix=PREFIX_CHECKPOINT_DIR, use_mtime=False) -> List[str]:
+    def _sorted_checkpoints(
+        self, checkpoint_prefix=PREFIX_CHECKPOINT_DIR, use_mtime=False
+    ) -> List[str]:
         output_dir_name = os.path.basename(self.args.output_dir)
         checkpoint_prefix = f"{output_dir_name}-{PREFIX_CHECKPOINT_DIR}"
 
         ordering_and_checkpoint_path = []
 
-        glob_checkpoints = [str(x) for x in Path(self.args.output_dir).glob(f"{checkpoint_prefix}-*")]
+        glob_checkpoints = [
+            str(x) for x in Path(self.args.output_dir).glob(f"{checkpoint_prefix}-*")
+        ]
 
         for path in glob_checkpoints:
             if use_mtime:
@@ -1376,7 +1599,9 @@ class Trainer_Prefix:
             else:
                 regex_match = re.match(f".*{checkpoint_prefix}-([0-9]+)", path)
                 if regex_match and regex_match.groups():
-                    ordering_and_checkpoint_path.append((int(regex_match.groups()[0]), path))
+                    ordering_and_checkpoint_path.append(
+                        (int(regex_match.groups()[0]), path)
+                    )
 
         checkpoints_sorted = sorted(ordering_and_checkpoint_path)
         checkpoints_sorted = [checkpoint[1] for checkpoint in checkpoints_sorted]
@@ -1391,10 +1616,16 @@ class Trainer_Prefix:
         if len(checkpoints_sorted) <= self.args.save_total_limit:
             return
 
-        number_of_checkpoints_to_delete = max(0, len(checkpoints_sorted) - self.args.save_total_limit)
+        number_of_checkpoints_to_delete = max(
+            0, len(checkpoints_sorted) - self.args.save_total_limit
+        )
         checkpoints_to_be_deleted = checkpoints_sorted[:number_of_checkpoints_to_delete]
         for checkpoint in checkpoints_to_be_deleted:
-            logger.info("Deleting older checkpoint [{}] due to args.save_total_limit".format(checkpoint))
+            logger.info(
+                "Deleting older checkpoint [{}] due to args.save_total_limit".format(
+                    checkpoint
+                )
+            )
             shutil.rmtree(checkpoint)
 
     def evaluate(self, eval_dataset: Optional[Dataset] = None) -> Dict[str, float]:
@@ -1426,8 +1657,6 @@ class Trainer_Prefix:
 
         return output.metrics
 
-
-
     def predict(self, test_dataset: Dataset) -> PredictionOutput:
         """
         Run prediction and returns predictions and potential metrics.
@@ -1454,7 +1683,10 @@ class Trainer_Prefix:
         return self.prediction_loop(test_dataloader, description="Prediction")
 
     def prediction_loop(
-        self, dataloader: DataLoader, description: str, prediction_loss_only: Optional[bool] = None
+        self,
+        dataloader: DataLoader,
+        description: str,
+        prediction_loss_only: Optional[bool] = None,
     ) -> PredictionOutput:
         """
         Prediction/evaluation loop, shared by :obj:`Trainer.evaluate()` and :obj:`Trainer.predict()`.
@@ -1466,10 +1698,14 @@ class Trainer_Prefix:
                 "The `_prediction_loop` method is deprecated and won't be called in a future version, define `prediction_loop` in your subclass.",
                 FutureWarning,
             )
-            return self._prediction_loop(dataloader, description, prediction_loss_only=prediction_loss_only)
+            return self._prediction_loop(
+                dataloader, description, prediction_loss_only=prediction_loss_only
+            )
 
         prediction_loss_only = (
-            prediction_loss_only if prediction_loss_only is not None else self.args.prediction_loss_only
+            prediction_loss_only
+            if prediction_loss_only is not None
+            else self.args.prediction_loss_only
         )
 
         assert not getattr(
@@ -1504,14 +1740,18 @@ class Trainer_Prefix:
         print(self.gpt2.training)
 
         if is_torch_tpu_available():
-            dataloader = pl.ParallelLoader(dataloader, [self.args.device]).per_device_loader(self.args.device)
+            dataloader = pl.ParallelLoader(
+                dataloader, [self.args.device]
+            ).per_device_loader(self.args.device)
 
         if self.args.past_index >= 0:
             self._past = None
 
         disable_tqdm = not self.is_local_process_zero() or self.args.disable_tqdm
         for inputs in tqdm(dataloader, desc=description, disable=disable_tqdm):
-            loss, logits, labels = self.prediction_step(model, inputs, prediction_loss_only)
+            loss, logits, labels = self.prediction_step(
+                model, inputs, prediction_loss_only
+            )
             batch_size = inputs[list(inputs.keys())[0]].shape[0]
             if loss is not None:
                 eval_losses.extend([loss] * batch_size)
@@ -1520,7 +1760,11 @@ class Trainer_Prefix:
                 temp_logits = [torch.log_softmax(x) for x in logits]
                 entropy_losses.extend([(x.exp() * x).sum() for x in temp_logits])
             if labels is not None:
-                label_ids = labels if label_ids is None else nested_concat(label_ids, labels, dim=0)
+                label_ids = (
+                    labels
+                    if label_ids is None
+                    else nested_concat(label_ids, labels, dim=0)
+                )
 
         if self.args.past_index and hasattr(self, "_past"):
             # Clean the state at the end of the evaluation loop
@@ -1529,9 +1773,13 @@ class Trainer_Prefix:
         if self.args.local_rank != -1:
             # In distributed mode, concatenate all results from all nodes:
             if preds is not None:
-                preds = distributed_concat(preds, num_total_examples=self.num_examples(dataloader))
+                preds = distributed_concat(
+                    preds, num_total_examples=self.num_examples(dataloader)
+                )
             if label_ids is not None:
-                label_ids = distributed_concat(label_ids, num_total_examples=self.num_examples(dataloader))
+                label_ids = distributed_concat(
+                    label_ids, num_total_examples=self.num_examples(dataloader)
+                )
         elif is_torch_tpu_available():
             # tpu-comment: Get all predictions and labels from all worker shards of eval dataset
             if preds is not None:
@@ -1539,7 +1787,9 @@ class Trainer_Prefix:
             if label_ids is not None:
                 label_ids = nested_xla_mesh_reduce(label_ids, "eval_label_ids")
             if eval_losses is not None:
-                eval_losses = xm.mesh_reduce("eval_losses", torch.tensor(eval_losses), torch.cat).tolist()
+                eval_losses = xm.mesh_reduce(
+                    "eval_losses", torch.tensor(eval_losses), torch.cat
+                ).tolist()
 
         # Finally, turn the aggregated tensors into numpy arrays.
         if preds is not None:
@@ -1547,14 +1797,22 @@ class Trainer_Prefix:
         if label_ids is not None:
             label_ids = nested_numpify(label_ids)
 
-        if self.compute_metrics is not None and preds is not None and label_ids is not None:
-            metrics = self.compute_metrics(EvalPrediction(predictions=preds, label_ids=label_ids))
+        if (
+            self.compute_metrics is not None
+            and preds is not None
+            and label_ids is not None
+        ):
+            metrics = self.compute_metrics(
+                EvalPrediction(predictions=preds, label_ids=label_ids)
+            )
         else:
             metrics = {}
         if len(eval_losses) > 0:
             if self.args.local_rank != -1:
                 metrics["eval_loss"] = (
-                    distributed_broadcast_scalars(eval_losses, num_total_examples=self.num_examples(dataloader))
+                    distributed_broadcast_scalars(
+                        eval_losses, num_total_examples=self.num_examples(dataloader)
+                    )
                     .mean()
                     .item()
                 )
@@ -1566,13 +1824,16 @@ class Trainer_Prefix:
             if not key.startswith("eval_"):
                 metrics[f"eval_{key}"] = metrics.pop(key)
         if len(entropy_losses) > 0:
-            metrics['entropy'] = np.mean(entropy_losses)
-            print('entropy', metrics['entropy'] )
+            metrics["entropy"] = np.mean(entropy_losses)
+            print("entropy", metrics["entropy"])
 
         return PredictionOutput(predictions=preds, label_ids=label_ids, metrics=metrics)
 
     def prediction_step(
-        self, model: nn.Module, inputs: Dict[str, Union[torch.Tensor, Any]], prediction_loss_only: bool
+        self,
+        model: nn.Module,
+        inputs: Dict[str, Union[torch.Tensor, Any]],
+        prediction_loss_only: bool,
     ) -> Tuple[Optional[float], Optional[torch.Tensor], Optional[torch.Tensor]]:
         """
         Perform an evaluation step on :obj:`model` using obj:`inputs`.
@@ -1617,7 +1878,9 @@ class Trainer_Prefix:
                 # Slicing so we get a tuple even if `outputs` is a `ModelOutput`.
                 logits = outputs[:]
             if self.args.past_index >= 0:
-                self._past = outputs[self.args.past_index if has_labels else self.args.past_index - 1]
+                self._past = outputs[
+                    self.args.past_index if has_labels else self.args.past_index - 1
+                ]
 
         if prediction_loss_only:
             return (loss, None, None)

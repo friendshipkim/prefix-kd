@@ -42,33 +42,33 @@ from transformers import (
     AutoTokenizer,
     DataCollatorForLanguageModeling,
     DataCollatorForPermutationLanguageModeling,
-    DataCollatorForWeightedLanguageModeling, # modified
-    DataCollatorForEmbMatchLanguageModeling, #modified
-    DataCollatorForTopicLanguageModeling, #modified
-    DataCollatorForLengthLanguageModeling, #modified
-    DataCollatorForKeywordLanguageModeling, #modified
-    DataCollatorForData2TextLanguageModeling, #modified
-    DataCollatorForText2DataLanguageModeling, #modified
-    DataCollatorForWritingPromptsLanguageModeling, #modified
-    DataCollatorForClassificationSentimentLanguageModeling, #modified
-    DataCollatorForSumLanguageModeling, #modified
+    DataCollatorForWeightedLanguageModeling,  # modified
+    DataCollatorForEmbMatchLanguageModeling,  # modified
+    DataCollatorForTopicLanguageModeling,  # modified
+    DataCollatorForLengthLanguageModeling,  # modified
+    DataCollatorForKeywordLanguageModeling,  # modified
+    DataCollatorForData2TextLanguageModeling,  # modified
+    DataCollatorForText2DataLanguageModeling,  # modified
+    DataCollatorForWritingPromptsLanguageModeling,  # modified
+    DataCollatorForClassificationSentimentLanguageModeling,  # modified
+    DataCollatorForSumLanguageModeling,  # modified
     HfArgumentParser,
     LineByLineTextDataset,
-    LineByLineWithWeightTextDataset, # modified
-    LineByLineEmbMatchTextDataset, # modified
-    LineByLineTopicTextDataset, # modified
-    LineByLineKeywordTextDataset, # modified
-    LineByLineLengthTextDataset, # modified
-    LineByLineData2TextTextDataset, # modified
-    LineByLineLemma2TextTextDataset, # modified
-    LineByLineText2DataTextDataset, # modified
-    LineByLineTriplesTextDataset, # modified
-    LineByLineWebNLGTextDataset,# modified
-    LineByLineWritingPromptsTextDataset,# modified
-    LineByLineSentimentTextDataset,# modified
-    LineByLineClassificationSentimentTextDataset,# modified
+    LineByLineWithWeightTextDataset,  # modified
+    LineByLineEmbMatchTextDataset,  # modified
+    LineByLineTopicTextDataset,  # modified
+    LineByLineKeywordTextDataset,  # modified
+    LineByLineLengthTextDataset,  # modified
+    LineByLineData2TextTextDataset,  # modified
+    LineByLineLemma2TextTextDataset,  # modified
+    LineByLineText2DataTextDataset,  # modified
+    LineByLineTriplesTextDataset,  # modified
+    LineByLineWebNLGTextDataset,  # modified
+    LineByLineWritingPromptsTextDataset,  # modified
+    LineByLineSentimentTextDataset,  # modified
+    LineByLineClassificationSentimentTextDataset,  # modified
     LineByLineClassificationTopicTextDataset,
-    LineByLineSumTextDataset,# modified
+    LineByLineSumTextDataset,  # modified
     PreTrainedTokenizer,
     TextDataset,
     Trainer,
@@ -82,7 +82,6 @@ from transformers import (
 )
 
 from trainer_prefix import Trainer_Prefix
-
 
 
 logger = logging.getLogger(__name__)
@@ -108,74 +107,58 @@ class ModelArguments:
         default=None,
         metadata={
             "help": "The prefix model checkpoint for weights initialization. "
-                    "Leave None if you want to train a model from scratch."
+            "Leave None if you want to train a model from scratch."
         },
     )
 
     prefix_mode: Optional[str] = field(
-        default='activation',
-        metadata={
-            "help": "activation or embedding"
-        },
+        default="activation",
+        metadata={"help": "activation or embedding"},
     )
-
-
 
     preseqlen: Optional[int] = field(
         default=0,
-        metadata={
-            "help": "preseqlen for how many tokens of prefix should we include."
-        },
+        metadata={"help": "preseqlen for how many tokens of prefix should we include."},
     )
 
     optim_prefix: Optional[str] = field(
-        default='no',
+        default="no",
         metadata={
             "help": "whether we are optimizing the prefix directly, or optimize another amortized function that "
-                    "genrate the prefix."
+            "genrate the prefix."
         },
     )
 
-
-
     tuning_mode: Optional[str] = field(
-        default='finetune',
-        metadata={
-            "help": "whether it's doing prefixtune or finetune."
-        },
+        default="finetune",
+        metadata={"help": "whether it's doing prefixtune or finetune."},
     )
 
     objective_mode: Optional[int] = field(
         default=2,
-        metadata={
-            "help": "In prefixtuning setting, the objective function... "
-        },
+        metadata={"help": "In prefixtuning setting, the objective function... "},
     )
 
     top_layers: Optional[int] = field(
         default=2,
-        metadata={
-            "help": "In finetuning setting, if we only tune the top k layers. "
-        },
+        metadata={"help": "In finetuning setting, if we only tune the top k layers. "},
     )
 
     adapter_design: Optional[int] = field(
         default=2,
         metadata={
             "help": "For Baseline of the adapter module... (1) means using the NLG adapter reference. "
-                    "(2) means using a design similar to adapter module"
+            "(2) means using a design similar to adapter module"
         },
     )
 
     adapter_bottleneck: Optional[int] = field(
         default=100,
-        metadata={
-            "help": "For baseline adapter module: the mid dim of the adapter. "
-        },
+        metadata={"help": "For baseline adapter module: the mid dim of the adapter. "},
     )
 
     parametrize_emb: Optional[str] = field(
-        default='MLP',
+        default="MLP",
         metadata={
             "help": "MLP or Emb to parametrize when we optimize for the embeddings."
         },
@@ -183,100 +166,88 @@ class ModelArguments:
 
     prefix_dropout: Optional[float] = field(
         default=0.0,
-        metadata={
-            "help": "dropout rate for the prefix tuning model. "
-        },
+        metadata={"help": "dropout rate for the prefix tuning model. "},
     )
 
     teacher_dropout: Optional[float] = field(
         default=0.1,
-        metadata={
-            "help": "dropout rate for the teacher model. "
-        },
+        metadata={"help": "dropout rate for the teacher model. "},
     )
 
-
     init_random: Optional[str] = field(
-        default='no',
+        default="no",
         metadata={
             "help": "whether to init a random embedding, or use GPT2 embedding for the prefix tuning model. "
         },
     )
 
-    init_shallow : Optional[str] = field(
-        default='no',
+    init_shallow: Optional[str] = field(
+        default="no",
         metadata={
             "help": "shallow is default to be no, because we add reparametrization trick. If shallow=yes, "
-                    "then no reparametrization "
+            "then no reparametrization "
         },
     )
 
     init_shallow_word: Optional[str] = field(
-        default='no',
-        metadata={
-            "help": "when init_shallow is yes, what word to use... "
-        },
+        default="no",
+        metadata={"help": "when init_shallow is yes, what word to use... "},
     )
 
-
     use_dropout: Optional[str] = field(
-        default='no',
-        metadata={
-            "help": "whether to use dropout of GPT2 on trainer. "
-        },
+        default="no",
+        metadata={"help": "whether to use dropout of GPT2 on trainer. "},
     )
 
     use_custom_teacher_dropout: Optional[str] = field(
-        default='no',
-        metadata={
-            "help": "whether to use dropout of GPT2 on trainer. "
-        },
+        default="no",
+        metadata={"help": "whether to use dropout of GPT2 on trainer. "},
     )
 
     mid_dim: Optional[int] = field(
         default=512,
-        metadata={
-            "help": "the mid dim."
-        },
+        metadata={"help": "the mid dim."},
     )
 
-
     gumbel: Optional[str] = field(
-        default='no',
-        metadata={
-            "help": "use the gumbel softmax trick in training."
-        },
+        default="no",
+        metadata={"help": "use the gumbel softmax trick in training."},
     )
 
     replay_buffer: Optional[str] = field(
-        default='no',
-        metadata={
-            "help": "use the replay buffer in training."
-        },
+        default="no",
+        metadata={"help": "use the replay buffer in training."},
     )
 
     training_obj: Optional[int] = field(
         default=0,
-        metadata={
-            "help": "use a specified training objective"
-        },
+        metadata={"help": "use a specified training objective"},
     )
-
-
-
 
     model_type: Optional[str] = field(
         default=None,
-        metadata={"help": "If training from scratch, pass a model type from the list: " + ", ".join(MODEL_TYPES)},
+        metadata={
+            "help": "If training from scratch, pass a model type from the list: "
+            + ", ".join(MODEL_TYPES)
+        },
     )
     config_name: Optional[str] = field(
-        default=None, metadata={"help": "Pretrained config name or path if not the same as model_name"}
+        default=None,
+        metadata={
+            "help": "Pretrained config name or path if not the same as model_name"
+        },
     )
     tokenizer_name: Optional[str] = field(
-        default=None, metadata={"help": "Pretrained tokenizer name or path if not the same as model_name"}
+        default=None,
+        metadata={
+            "help": "Pretrained tokenizer name or path if not the same as model_name"
+        },
     )
     cache_dir: Optional[str] = field(
-        default=None, metadata={"help": "Where do you want to store the pretrained models downloaded from s3"}
+        default=None,
+        metadata={
+            "help": "Where do you want to store the pretrained models downloaded from s3"
+        },
     )
 
 
@@ -291,18 +262,26 @@ class DataTrainingArguments:
     )
     eval_data_file: Optional[str] = field(
         default=None,
-        metadata={"help": "An optional input evaluation data file to evaluate the perplexity on (a text file)."},
+        metadata={
+            "help": "An optional input evaluation data file to evaluate the perplexity on (a text file)."
+        },
     )
     line_by_line: bool = field(
         default=False,
-        metadata={"help": "Whether distinct lines of text in the dataset are to be handled as distinct sequences."},
+        metadata={
+            "help": "Whether distinct lines of text in the dataset are to be handled as distinct sequences."
+        },
     )
 
     mlm: bool = field(
-        default=False, metadata={"help": "Train with masked-language modeling loss instead of language modeling."}
+        default=False,
+        metadata={
+            "help": "Train with masked-language modeling loss instead of language modeling."
+        },
     )
     mlm_probability: float = field(
-        default=0.15, metadata={"help": "Ratio of tokens to mask for masked language modeling loss"}
+        default=0.15,
+        metadata={"help": "Ratio of tokens to mask for masked language modeling loss"},
     )
     plm_probability: float = field(
         default=1 / 6,
@@ -311,44 +290,46 @@ class DataTrainingArguments:
         },
     )
     max_span_length: int = field(
-        default=5, metadata={"help": "Maximum length of a span of masked tokens for permutation language modeling."}
+        default=5,
+        metadata={
+            "help": "Maximum length of a span of masked tokens for permutation language modeling."
+        },
     )
 
-    task_mode: Optional[str] = field(
-        default=None, metadata={"help": "The task mode"}
-    )
+    task_mode: Optional[str] = field(default=None, metadata={"help": "The task mode"})
 
     matching_objective: Optional[str] = field(
-        default='kl', metadata={"help": "The distillation objective"}
+        default="kl", metadata={"help": "The distillation objective"}
     )
 
-    distill: Optional[str] = field(
-        default='no', metadata={"help": "yes/no"}
-    )
+    distill: Optional[str] = field(default="no", metadata={"help": "yes/no"})
 
     finetuned_model_path: Optional[str] = field(
         default="/u/scr/xlisali/contrast_LM/transformers/examples/full/full/webnlgfinetune_n_20_act_cat_b=6-e"
-                "=10_d=0.0_u=no_lr=1e-05_w=0.0_s=101_r=n_m=512_earlystop", metadata={"help": "finetuned model path (teacher model)"}
+        "=10_d=0.0_u=no_lr=1e-05_w=0.0_s=101_r=n_m=512_earlystop",
+        metadata={"help": "finetuned model path (teacher model)"},
     )
 
-
-
     format_mode: Optional[str] = field(
-        default='cat', metadata={"help": "The mode of data2text format (cat, peek, nopeek)"}
+        default="cat",
+        metadata={"help": "The mode of data2text format (cat, peek, nopeek)"},
     )
 
     lowdata_token: Optional[str] = field(
-        default='summarize', metadata={"help": "The token to be prepended at initialization time. "}
+        default="summarize",
+        metadata={"help": "The token to be prepended at initialization time. "},
     )
 
     use_lowdata_token: Optional[str] = field(
-        default='yes', metadata={"help": "Whether we should use the lowdata token and pass it to the prefixTuning Model "
-                                         "for the initialization trick.  "}
+        default="yes",
+        metadata={
+            "help": "Whether we should use the lowdata token and pass it to the prefixTuning Model "
+            "for the initialization trick.  "
+        },
     )
 
-
     train_embs: Optional[str] = field(
-        default='no', metadata={"help": "whether the train word embeddings"}
+        default="no", metadata={"help": "whether the train word embeddings"}
     )
 
     max_source_length: Optional[int] = field(
@@ -376,7 +357,8 @@ class DataTrainingArguments:
         },
     )
     overwrite_cache: bool = field(
-        default=False, metadata={"help": "Overwrite the cached training and evaluation sets"}
+        default=False,
+        metadata={"help": "Overwrite the cached training and evaluation sets"},
     )
 
 
@@ -393,82 +375,151 @@ def get_dataset(
         print(args.task_mode)
         # return LineByLineTextDataset(tokenizer=tokenizer, file_path=file_path, block_size=args.block_size)
         # return LineByLineWithWeightTextDataset(tokenizer=tokenizer, file_path=file_path, block_size=args.block_size)
-        if args.task_mode == 'embMatch':
-            dataset = LineByLineEmbMatchTextDataset(tokenizer=tokenizer, file_path=file_path, block_size=args.block_size,
-                                                num_layer=1, bos_tok=tokenizer.bos_token,
-                                                     eos_tok=tokenizer.eos_token)
-        elif args.task_mode == 'topic':
-            dataset = LineByLineTopicTextDataset(tokenizer=tokenizer, file_path=file_path,
-                                                    block_size=args.block_size, bos_tok=tokenizer.bos_token,
-                                                     eos_tok=tokenizer.eos_token)
-        elif args.task_mode == 'length':
-            dataset = LineByLineLengthTextDataset(tokenizer=tokenizer, file_path=file_path,
-                                                 block_size=args.block_size, bos_tok=tokenizer.bos_token,
-                                                     eos_tok=tokenizer.eos_token)
-        elif args.task_mode == 'keyword':
+        if args.task_mode == "embMatch":
+            dataset = LineByLineEmbMatchTextDataset(
+                tokenizer=tokenizer,
+                file_path=file_path,
+                block_size=args.block_size,
+                num_layer=1,
+                bos_tok=tokenizer.bos_token,
+                eos_tok=tokenizer.eos_token,
+            )
+        elif args.task_mode == "topic":
+            dataset = LineByLineTopicTextDataset(
+                tokenizer=tokenizer,
+                file_path=file_path,
+                block_size=args.block_size,
+                bos_tok=tokenizer.bos_token,
+                eos_tok=tokenizer.eos_token,
+            )
+        elif args.task_mode == "length":
+            dataset = LineByLineLengthTextDataset(
+                tokenizer=tokenizer,
+                file_path=file_path,
+                block_size=args.block_size,
+                bos_tok=tokenizer.bos_token,
+                eos_tok=tokenizer.eos_token,
+            )
+        elif args.task_mode == "keyword":
             print(file_path)
-            dataset = LineByLineKeywordTextDataset(tokenizer=tokenizer, file_path=file_path,
-                                                 block_size=args.block_size, bos_tok=tokenizer.bos_token,
-                                                     eos_tok=tokenizer.eos_token)
-        elif args.task_mode == 'data2text':
-            dataset = LineByLineData2TextTextDataset(tokenizer=tokenizer, file_path=file_path,
-                                                 block_size=args.block_size, bos_tok=tokenizer.bos_token,
-                                                 eos_tok=tokenizer.eos_token,
-                                                 lowdata_token=args.lowdata_token if ('lowdata' in training_args.output_dir and finetune_mode) else None)
+            dataset = LineByLineKeywordTextDataset(
+                tokenizer=tokenizer,
+                file_path=file_path,
+                block_size=args.block_size,
+                bos_tok=tokenizer.bos_token,
+                eos_tok=tokenizer.eos_token,
+            )
+        elif args.task_mode == "data2text":
+            dataset = LineByLineData2TextTextDataset(
+                tokenizer=tokenizer,
+                file_path=file_path,
+                block_size=args.block_size,
+                bos_tok=tokenizer.bos_token,
+                eos_tok=tokenizer.eos_token,
+                lowdata_token=args.lowdata_token
+                if ("lowdata" in training_args.output_dir and finetune_mode)
+                else None,
+            )
 
-        elif args.task_mode == 'triples':
-            dataset = LineByLineTriplesTextDataset(tokenizer=tokenizer, file_path=file_path,
-                                                     block_size=args.block_size, bos_tok=tokenizer.bos_token,
-                                                     eos_tok=tokenizer.eos_token)
+        elif args.task_mode == "triples":
+            dataset = LineByLineTriplesTextDataset(
+                tokenizer=tokenizer,
+                file_path=file_path,
+                block_size=args.block_size,
+                bos_tok=tokenizer.bos_token,
+                eos_tok=tokenizer.eos_token,
+            )
 
-        elif args.task_mode == 'webnlg':
-            dataset = LineByLineWebNLGTextDataset(tokenizer=tokenizer, file_path=file_path,
-                                                     block_size=args.block_size, bos_tok=tokenizer.bos_token,
-                                                     eos_tok=tokenizer.eos_token)
+        elif args.task_mode == "webnlg":
+            dataset = LineByLineWebNLGTextDataset(
+                tokenizer=tokenizer,
+                file_path=file_path,
+                block_size=args.block_size,
+                bos_tok=tokenizer.bos_token,
+                eos_tok=tokenizer.eos_token,
+            )
 
-        elif args.task_mode == 'writingPrompts':
-            dataset = LineByLineWritingPromptsTextDataset(tokenizer=tokenizer, file_path=file_path,
-                                                  block_size=args.block_size, bos_tok=tokenizer.bos_token,
-                                                  eos_tok=tokenizer.eos_token)
+        elif args.task_mode == "writingPrompts":
+            dataset = LineByLineWritingPromptsTextDataset(
+                tokenizer=tokenizer,
+                file_path=file_path,
+                block_size=args.block_size,
+                bos_tok=tokenizer.bos_token,
+                eos_tok=tokenizer.eos_token,
+            )
 
-        elif args.task_mode =='cnndm' or args.task_mode =='xsum':
+        elif args.task_mode == "cnndm" or args.task_mode == "xsum":
             max_source_length = args.max_source_length
-            max_target_length = args.train_max_target_length if not evaluate else args.val_max_target_length
-            dataset = LineByLineSumTextDataset(tokenizer=tokenizer, file_path=file_path,
-                                              block_size=args.block_size, bos_tok=tokenizer.bos_token,
-                                              eos_tok=tokenizer.eos_token, max_source_length=max_source_length,
-                                               max_target_length=max_target_length,)
+            max_target_length = (
+                args.train_max_target_length
+                if not evaluate
+                else args.val_max_target_length
+            )
+            dataset = LineByLineSumTextDataset(
+                tokenizer=tokenizer,
+                file_path=file_path,
+                block_size=args.block_size,
+                bos_tok=tokenizer.bos_token,
+                eos_tok=tokenizer.eos_token,
+                max_source_length=max_source_length,
+                max_target_length=max_target_length,
+            )
 
-        elif args.task_mode == 'sentiment':
-            dataset = LineByLineSentimentTextDataset(tokenizer=tokenizer, file_path=file_path,
-                                                 block_size=args.block_size, bos_tok=tokenizer.bos_token,
-                                                 eos_tok=tokenizer.eos_token)
+        elif args.task_mode == "sentiment":
+            dataset = LineByLineSentimentTextDataset(
+                tokenizer=tokenizer,
+                file_path=file_path,
+                block_size=args.block_size,
+                bos_tok=tokenizer.bos_token,
+                eos_tok=tokenizer.eos_token,
+            )
 
-        elif args.task_mode == 'classify-sentiment':
-            dataset = LineByLineClassificationSentimentTextDataset(tokenizer=tokenizer, file_path=file_path,
-                                                 block_size=args.block_size, bos_tok=tokenizer.bos_token,
-                                                 eos_tok=tokenizer.eos_token)
+        elif args.task_mode == "classify-sentiment":
+            dataset = LineByLineClassificationSentimentTextDataset(
+                tokenizer=tokenizer,
+                file_path=file_path,
+                block_size=args.block_size,
+                bos_tok=tokenizer.bos_token,
+                eos_tok=tokenizer.eos_token,
+            )
 
-        elif args.task_mode == 'classify-topic':
-            dataset = LineByLineClassificationTopicTextDataset(tokenizer=tokenizer, file_path=file_path,
-                                                                   block_size=args.block_size,
-                                                                   bos_tok=tokenizer.bos_token,
-                                                                   eos_tok=tokenizer.eos_token)
+        elif args.task_mode == "classify-topic":
+            dataset = LineByLineClassificationTopicTextDataset(
+                tokenizer=tokenizer,
+                file_path=file_path,
+                block_size=args.block_size,
+                bos_tok=tokenizer.bos_token,
+                eos_tok=tokenizer.eos_token,
+            )
 
-        elif args.task_mode == 'lemma2text':
-            dataset = LineByLineLemma2TextTextDataset(tokenizer=tokenizer, file_path=file_path,
-                                                 block_size=args.block_size, bos_tok=tokenizer.bos_token,
-                                                     eos_tok=tokenizer.eos_token)
-        elif args.task_mode == 'text2data':
-            dataset = LineByLineText2DataTextDataset(tokenizer=tokenizer, file_path=file_path,
-                                                 block_size=args.block_size, bos_tok=tokenizer.bos_token,
-                                                     eos_tok=tokenizer.eos_token)
-        elif args.task_mode == 'gen_data':
-            dataset =  LineByLineWithWeightTextDataset(tokenizer=tokenizer, file_path=file_path,
-                                                   block_size=args.block_size, bos_tok=tokenizer.bos_token,
-                                                     eos_tok=tokenizer.eos_token)
+        elif args.task_mode == "lemma2text":
+            dataset = LineByLineLemma2TextTextDataset(
+                tokenizer=tokenizer,
+                file_path=file_path,
+                block_size=args.block_size,
+                bos_tok=tokenizer.bos_token,
+                eos_tok=tokenizer.eos_token,
+            )
+        elif args.task_mode == "text2data":
+            dataset = LineByLineText2DataTextDataset(
+                tokenizer=tokenizer,
+                file_path=file_path,
+                block_size=args.block_size,
+                bos_tok=tokenizer.bos_token,
+                eos_tok=tokenizer.eos_token,
+            )
+        elif args.task_mode == "gen_data":
+            dataset = LineByLineWithWeightTextDataset(
+                tokenizer=tokenizer,
+                file_path=file_path,
+                block_size=args.block_size,
+                bos_tok=tokenizer.bos_token,
+                eos_tok=tokenizer.eos_token,
+            )
         else:
-            return LineByLineTextDataset(tokenizer=tokenizer, file_path=file_path, block_size=args.block_size)
+            return LineByLineTextDataset(
+                tokenizer=tokenizer, file_path=file_path, block_size=args.block_size
+            )
 
         # print(len(dataset))
         # n = len(dataset) % training_args.per_device_train_batch_size
@@ -495,9 +546,10 @@ def main():
     # or by passing the --help flag to this script.
     # We now keep distinct sets of args, for a cleaner separation of concerns.
 
-    parser = HfArgumentParser((ModelArguments, DataTrainingArguments, TrainingArguments))
+    parser = HfArgumentParser(
+        (ModelArguments, DataTrainingArguments, TrainingArguments)
+    )
     model_args, data_args, training_args = parser.parse_args_into_dataclasses()
-
 
     if data_args.eval_data_file is None and training_args.do_eval:
         raise ValueError(
@@ -541,17 +593,25 @@ def main():
     # download model & vocab.
 
     if model_args.config_name:
-        config = AutoConfig.from_pretrained(model_args.config_name, cache_dir=model_args.cache_dir)
+        config = AutoConfig.from_pretrained(
+            model_args.config_name, cache_dir=model_args.cache_dir
+        )
     elif model_args.model_name_or_path:
-        config = AutoConfig.from_pretrained(model_args.model_name_or_path, cache_dir=model_args.cache_dir)
+        config = AutoConfig.from_pretrained(
+            model_args.model_name_or_path, cache_dir=model_args.cache_dir
+        )
     else:
         config = CONFIG_MAPPING[model_args.model_type]()
         logger.warning("You are instantiating a new config instance from scratch.")
 
     if model_args.tokenizer_name:
-        tokenizer = AutoTokenizer.from_pretrained(model_args.tokenizer_name, cache_dir=model_args.cache_dir)
+        tokenizer = AutoTokenizer.from_pretrained(
+            model_args.tokenizer_name, cache_dir=model_args.cache_dir
+        )
     elif model_args.model_name_or_path:
-        tokenizer = AutoTokenizer.from_pretrained(model_args.model_name_or_path, cache_dir=model_args.cache_dir)
+        tokenizer = AutoTokenizer.from_pretrained(
+            model_args.model_name_or_path, cache_dir=model_args.cache_dir
+        )
     else:
         raise ValueError(
             "You are instantiating a new tokenizer from scratch. This is not supported, but you can do it from another script, save it,"
@@ -568,14 +628,14 @@ def main():
     config._objective_mode = model_args.objective_mode
     config._my_arg_task_mode = data_args.task_mode
 
-    if model_args.tuning_mode in ['finetune', 'adaptertune', 'finetune-top']:
-        print('objective is 0 because of finetune')
-    elif model_args.tuning_mode == 'prefixtune':
-        print('objective is {}'.format(config._objective_mode ))
+    if model_args.tuning_mode in ["finetune", "adaptertune", "finetune-top"]:
+        print("objective is 0 because of finetune")
+    elif model_args.tuning_mode == "prefixtune":
+        print("objective is {}".format(config._objective_mode))
 
-    if model_args.tuning_mode == 'adaptertune':
+    if model_args.tuning_mode == "adaptertune":
         config.adapter_design = model_args.adapter_design
-        config.bottleneck =  model_args.adapter_bottleneck
+        config.bottleneck = model_args.adapter_bottleneck
 
         if model_args.model_name_or_path:
             config.return_dict = True
@@ -610,7 +670,10 @@ def main():
     # HERE
     # model.resize_token_embeddings(len(tokenizer))
 
-    if config.model_type in ["bert", "roberta", "distilbert", "camembert"] and not data_args.mlm:
+    if (
+        config.model_type in ["bert", "roberta", "distilbert", "camembert"]
+        and not data_args.mlm
+    ):
         raise ValueError(
             "BERT and RoBERTa-like models do not have LM heads but masked LM heads. They must be run using the"
             "--mlm flag (masked language modeling)."
@@ -644,29 +707,25 @@ def main():
     #     # tokenizer.pad_token = tokenizer.eos_token
     #     print(tokenizer.pad_token, tokenizer.pad_token_id)
 
-
     ##############################################################
     ################# ADJUST TOKENIZER ###########################
     ##############################################################
 
     print(model_args.tuning_mode)
-    print('adapting the size of the model embedding to include [PAD]')
-    print('len(tokenizer) = ', len(tokenizer))
-    num_added_tokens = tokenizer.add_special_tokens(
-        {'pad_token': '[PAD]'})
+    print("adapting the size of the model embedding to include [PAD]")
+    print("len(tokenizer) = ", len(tokenizer))
+    num_added_tokens = tokenizer.add_special_tokens({"pad_token": "[PAD]"})
     embedding_layer = model.resize_token_embeddings(len(tokenizer))
-    print('len(tokenizer) = ', len(tokenizer))
+    print("len(tokenizer) = ", len(tokenizer))
     print(tokenizer.eos_token, tokenizer.eos_token_id)
     print(tokenizer.bos_token, tokenizer.bos_token_id)
 
-    if model_args.tuning_mode == 'prefixtune': # prefixtune
+    if model_args.tuning_mode == "prefixtune":  # prefixtune
         for param in model.base_model.parameters():
             param.requires_grad = False
         gpt2 = model
 
-
-        if data_args.distill == 'yes':
-
+        if data_args.distill == "yes":
             # load the teacher finetuned model for the task.
             if data_args.finetuned_model_path:
                 config.return_dict = True
@@ -681,64 +740,74 @@ def main():
             else:
                 assert False, "specify the data_args.finetuned_model_path"
 
-
-
-        print('loading the prefix model from ', model_args.prefixModel_name_or_path)
+        print("loading the prefix model from ", model_args.prefixModel_name_or_path)
         # print(bool(".ckpt" in model_args.prefixModel_name_or_path))
-        if model_args.optim_prefix == 'yes':
+        if model_args.optim_prefix == "yes":
             optim_prefix_bool = True
-        elif model_args.optim_prefix == 'no':
+        elif model_args.optim_prefix == "no":
             optim_prefix_bool = False
         else:
             assert False, "model_args.optim_prefix should be either yes or no"
 
         if model_args.prefixModel_name_or_path is not None:
-            config2 = AutoConfig.from_pretrained(model_args.prefixModel_name_or_path, cache_dir=model_args.cache_dir)
+            config2 = AutoConfig.from_pretrained(
+                model_args.prefixModel_name_or_path, cache_dir=model_args.cache_dir
+            )
             # print(config2)
 
-            if model_args.prefix_mode == 'embedding':
+            if model_args.prefix_mode == "embedding":
                 model = PrefixEmbTuning.from_pretrained(
-                        model_args.prefixModel_name_or_path,
-                        from_tf=bool(".ckpt" in model_args.prefixModel_name_or_path),
-                        config=config2,
-                        cache_dir=model_args.cache_dir,
-                        model_gpt2=gpt2, optim_prefix=optim_prefix_bool, preseqlen=model_args.preseqlen,
-                        use_infix=(data_args.format_mode == 'infix')
-                    )
+                    model_args.prefixModel_name_or_path,
+                    from_tf=bool(".ckpt" in model_args.prefixModel_name_or_path),
+                    config=config2,
+                    cache_dir=model_args.cache_dir,
+                    model_gpt2=gpt2,
+                    optim_prefix=optim_prefix_bool,
+                    preseqlen=model_args.preseqlen,
+                    use_infix=(data_args.format_mode == "infix"),
+                )
 
-            elif model_args.prefix_mode == 'activation':
-
+            elif model_args.prefix_mode == "activation":
                 model = PrefixTuning.from_pretrained(
                     model_args.prefixModel_name_or_path,
                     from_tf=bool(".ckpt" in model_args.prefixModel_name_or_path),
                     config=config2,
                     cache_dir=model_args.cache_dir,
-                    model_gpt2=gpt2, optim_prefix=optim_prefix_bool, preseqlen=model_args.preseqlen,
-                    use_infix=(data_args.format_mode == 'infix')
+                    model_gpt2=gpt2,
+                    optim_prefix=optim_prefix_bool,
+                    preseqlen=model_args.preseqlen,
+                    use_infix=(data_args.format_mode == "infix"),
                 )
             else:
                 assert False, "invalid prefix mode"
 
         else:
-
             # should clone the config and construct it.
-            config_prefix = AutoConfig.from_pretrained(model_args.model_name_or_path, cache_dir=model_args.cache_dir)
+            config_prefix = AutoConfig.from_pretrained(
+                model_args.model_name_or_path, cache_dir=model_args.cache_dir
+            )
             config_prefix._my_arg_tune_mode = model_args.tuning_mode
             config_prefix._my_arg_task_mode = data_args.task_mode
             config_prefix._my_arg_control = True
             config_prefix.train_weights = data_args.train_embs
             config_prefix.optim_prefix = optim_prefix_bool
             config_prefix.preseqlen = model_args.preseqlen
-            config_prefix.use_infix = (data_args.format_mode == 'infix')
+            config_prefix.use_infix = data_args.format_mode == "infix"
             config_prefix.format_mode = data_args.format_mode
             config_prefix.prefix_dropout = model_args.prefix_dropout
             config_prefix.vocab_size = len(tokenizer)
-            config_prefix.lowdata = ('lowdata' in training_args.output_dir)
+            config_prefix.lowdata = "lowdata" in training_args.output_dir
             if not config_prefix.lowdata:
-                config_prefix.lowdata = ('datalevels' in training_args.output_dir and data_args.use_lowdata_token == 'yes')
-            if config_prefix.lowdata and data_args.use_lowdata_token == 'yes':
-                config_prefix.lowdata_token = tokenizer([data_args.lowdata_token],
-                                                        add_prefix_space=True)['input_ids']  #return_tensors='np',
+                config_prefix.lowdata = (
+                    "datalevels" in training_args.output_dir
+                    and data_args.use_lowdata_token == "yes"
+                )
+            if config_prefix.lowdata and data_args.use_lowdata_token == "yes":
+                config_prefix.lowdata_token = tokenizer(
+                    [data_args.lowdata_token], add_prefix_space=True
+                )[
+                    "input_ids"
+                ]  # return_tensors='np',
                 print(data_args.lowdata_token)
                 print(config_prefix.lowdata_token)
 
@@ -746,34 +815,32 @@ def main():
             config_prefix.init_random = model_args.init_random
             config_prefix.mid_dim = model_args.mid_dim
             config_prefix.init_shallow = model_args.init_shallow
-            if config_prefix.init_shallow == 'yes':
-                if model_args.init_shallow_word != 'no':
-                    config_prefix.init_shallow_word = tokenizer([model_args.init_shallow_word],
-                                                                add_prefix_space=True)['input_ids']  #return_tensors='np',
+            if config_prefix.init_shallow == "yes":
+                if model_args.init_shallow_word != "no":
+                    config_prefix.init_shallow_word = tokenizer(
+                        [model_args.init_shallow_word], add_prefix_space=True
+                    )[
+                        "input_ids"
+                    ]  # return_tensors='np',
                 else:
                     config_prefix.init_shallow_word = None
                 print(model_args.init_shallow_word)
                 print(config_prefix.init_shallow_word)
 
-
-
-
-
-            print('training the prefix model from scratch. ')
-            if model_args.prefix_mode == 'embedding':
+            print("training the prefix model from scratch. ")
+            if model_args.prefix_mode == "embedding":
                 # specific parametrization for embedding.
                 config_prefix.parametrize_emb = model_args.parametrize_emb
                 model = PrefixEmbTuning(config_prefix, model_gpt2=gpt2)
 
-            elif model_args.prefix_mode == 'activation':
+            elif model_args.prefix_mode == "activation":
                 model = PrefixTuning(config_prefix, model_gpt2=gpt2)
             else:
                 assert False, "invalid prefix mode"
 
-
         discri_labels = None
 
-    elif model_args.tuning_mode == 'finetune-top':
+    elif model_args.tuning_mode == "finetune-top":
         # print(model.config)
         # print(model)
         for param in model.base_model.parameters():
@@ -783,21 +850,29 @@ def main():
         total_params = 0
         if top_layers == 0:
             for name, param in model.named_parameters():
-                if 'transformer.ln_f.' in name or 'transformer.wte' in name:
+                if "transformer.ln_f." in name or "transformer.wte" in name:
                     print(name)
                     param.requires_grad = True
                     total_params += param.numel()
         elif top_layers == 1:
             for name, param in model.named_parameters():
-                if 'transformer.ln_f.' in name or 'transformer.wte' in name or 'transformer.h.23.' in name:
+                if (
+                    "transformer.ln_f." in name
+                    or "transformer.wte" in name
+                    or "transformer.h.23." in name
+                ):
                     print(name)
                     param.requires_grad = True
                     total_params += param.numel()
 
         elif top_layers == 2:
             for name, param in model.named_parameters():
-                if 'transformer.ln_f.' in name or 'transformer.wte' in name or 'transformer.h.23.' in name or \
-                        'transformer.h.22.' in name:
+                if (
+                    "transformer.ln_f." in name
+                    or "transformer.wte" in name
+                    or "transformer.h.23." in name
+                    or "transformer.h.22." in name
+                ):
                     print(name)
                     param.requires_grad = True
                     print(param.shape, param.numel())
@@ -805,8 +880,11 @@ def main():
 
         elif top_layers == 22:
             for name, param in model.named_parameters():
-                if 'transformer.ln_f.' in name or 'transformer.h.23.' in name or \
-                        'transformer.h.22.' in name:
+                if (
+                    "transformer.ln_f." in name
+                    or "transformer.h.23." in name
+                    or "transformer.h.22." in name
+                ):
                     print(name)
                     param.requires_grad = True
                     print(param.shape, param.numel())
@@ -814,7 +892,7 @@ def main():
 
         elif top_layers == 11:
             for name, param in model.named_parameters():
-                if 'transformer.ln_f.' in name or 'transformer.h.23.' in name:
+                if "transformer.ln_f." in name or "transformer.h.23." in name:
                     print(name)
                     param.requires_grad = True
                     print(param.shape, param.numel())
@@ -822,15 +900,14 @@ def main():
 
         elif top_layers == 00:
             for name, param in model.named_parameters():
-                if 'transformer.ln_f.' in name:
+                if "transformer.ln_f." in name:
                     print(name)
                     param.requires_grad = True
                     print(param.shape, param.numel())
                     total_params += param.numel()
-        print('the total number of trainable parameters is {}'.format(total_params))
+        print("the total number of trainable parameters is {}".format(total_params))
 
-
-    elif model_args.tuning_mode == 'adaptertune':
+    elif model_args.tuning_mode == "adaptertune":
         print(model_args.tuning_mode)
 
         for param in model.base_model.parameters():
@@ -838,28 +915,34 @@ def main():
 
         total_params = 0
         for name, param in model.named_parameters():
-            if 'adapter_block' in name:
-                print(name, end=' ')
+            if "adapter_block" in name:
+                print(name, end=" ")
                 param.requires_grad = True
                 print(param.shape, param.numel())
                 total_params += param.numel()
 
-        print('the total number of trainable parameters is {}'.format(total_params))
-
-
-
+        print("the total number of trainable parameters is {}".format(total_params))
 
     ##############################################################
     #################LOADING DATASETS ###########################
     ##############################################################
 
-    train_dataset = (
-        get_dataset(data_args, tokenizer=tokenizer, cache_dir=model_args.cache_dir, training_args=training_args,
-                    finetune_mode=(model_args.tuning_mode == 'finetune')) #if training_args.do_train else None
-    )
+    train_dataset = get_dataset(
+        data_args,
+        tokenizer=tokenizer,
+        cache_dir=model_args.cache_dir,
+        training_args=training_args,
+        finetune_mode=(model_args.tuning_mode == "finetune"),
+    )  # if training_args.do_train else None
     eval_dataset = (
-        get_dataset(data_args, tokenizer=tokenizer, evaluate=True, cache_dir=model_args.cache_dir,
-                    training_args=training_args, finetune_mode=(model_args.tuning_mode == 'finetune') )
+        get_dataset(
+            data_args,
+            tokenizer=tokenizer,
+            evaluate=True,
+            cache_dir=model_args.cache_dir,
+            training_args=training_args,
+            finetune_mode=(model_args.tuning_mode == "finetune"),
+        )
         if training_args.do_eval
         else None
     )
@@ -870,69 +953,97 @@ def main():
             max_span_length=data_args.max_span_length,
         )
     else:
-
-        if data_args.task_mode == 'embMatch':
+        if data_args.task_mode == "embMatch":
             data_collator = DataCollatorForEmbMatchLanguageModeling(
-                tokenizer=tokenizer, mlm=data_args.mlm, mlm_probability=data_args.mlm_probability
+                tokenizer=tokenizer,
+                mlm=data_args.mlm,
+                mlm_probability=data_args.mlm_probability,
             )
-        elif data_args.task_mode == 'topic' or data_args.task_mode == 'sentiment':
+        elif data_args.task_mode == "topic" or data_args.task_mode == "sentiment":
             data_collator = DataCollatorForKeywordLanguageModeling(
-                tokenizer=tokenizer, mlm=data_args.mlm, mlm_probability=data_args.mlm_probability
+                tokenizer=tokenizer,
+                mlm=data_args.mlm,
+                mlm_probability=data_args.mlm_probability,
             )
-        elif data_args.task_mode == 'classify-topic' or data_args.task_mode == 'classify-sentiment':
+        elif (
+            data_args.task_mode == "classify-topic"
+            or data_args.task_mode == "classify-sentiment"
+        ):
             data_collator = DataCollatorForClassificationSentimentLanguageModeling(
-                tokenizer=tokenizer, mlm=data_args.mlm, mlm_probability=data_args.mlm_probability
+                tokenizer=tokenizer,
+                mlm=data_args.mlm,
+                mlm_probability=data_args.mlm_probability,
             )
-        elif data_args.task_mode == 'length':
+        elif data_args.task_mode == "length":
             data_collator = DataCollatorForKeywordLanguageModeling(
-                tokenizer=tokenizer, mlm=data_args.mlm, mlm_probability=data_args.mlm_probability
+                tokenizer=tokenizer,
+                mlm=data_args.mlm,
+                mlm_probability=data_args.mlm_probability,
             )
-        elif data_args.task_mode == 'keyword':
+        elif data_args.task_mode == "keyword":
             data_collator = DataCollatorForKeywordLanguageModeling(
-                tokenizer=tokenizer, mlm=data_args.mlm, mlm_probability=data_args.mlm_probability
+                tokenizer=tokenizer,
+                mlm=data_args.mlm,
+                mlm_probability=data_args.mlm_probability,
             )
-        elif data_args.task_mode == 'data2text' or data_args.task_mode== 'triples' or data_args.task_mode == 'webnlg':
-            print('FORMAT MODE IS ', data_args.format_mode)
+        elif (
+            data_args.task_mode == "data2text"
+            or data_args.task_mode == "triples"
+            or data_args.task_mode == "webnlg"
+        ):
+            print("FORMAT MODE IS ", data_args.format_mode)
             data_collator = DataCollatorForData2TextLanguageModeling(
-                tokenizer=tokenizer, mlm=data_args.mlm, mlm_probability=data_args.mlm_probability,
-                format_mode=data_args.format_mode
+                tokenizer=tokenizer,
+                mlm=data_args.mlm,
+                mlm_probability=data_args.mlm_probability,
+                format_mode=data_args.format_mode,
             )
-        elif data_args.task_mode == 'writingPrompts':
-            print('FORMAT MODE IS ', data_args.format_mode)
+        elif data_args.task_mode == "writingPrompts":
+            print("FORMAT MODE IS ", data_args.format_mode)
             data_collator = DataCollatorForWritingPromptsLanguageModeling(
-                tokenizer=tokenizer, mlm=data_args.mlm, mlm_probability=data_args.mlm_probability,
-                format_mode=data_args.format_mode
+                tokenizer=tokenizer,
+                mlm=data_args.mlm,
+                mlm_probability=data_args.mlm_probability,
+                format_mode=data_args.format_mode,
             )
-        elif data_args.task_mode == 'xsum' or  data_args.task_mode == 'cnndm':
-            print('FORMAT MODE IS ', data_args.format_mode)
+        elif data_args.task_mode == "xsum" or data_args.task_mode == "cnndm":
+            print("FORMAT MODE IS ", data_args.format_mode)
             data_collator = DataCollatorForSumLanguageModeling(
-                tokenizer=tokenizer, mlm=data_args.mlm, mlm_probability=data_args.mlm_probability,
-                format_mode=data_args.format_mode
+                tokenizer=tokenizer,
+                mlm=data_args.mlm,
+                mlm_probability=data_args.mlm_probability,
+                format_mode=data_args.format_mode,
             )
-        elif data_args.task_mode == 'lemma2text':
+        elif data_args.task_mode == "lemma2text":
             data_collator = DataCollatorForData2TextLanguageModeling(
-                tokenizer=tokenizer, mlm=data_args.mlm, mlm_probability=data_args.mlm_probability
+                tokenizer=tokenizer,
+                mlm=data_args.mlm,
+                mlm_probability=data_args.mlm_probability,
             )
-        elif data_args.task_mode == 'text2data':
+        elif data_args.task_mode == "text2data":
             data_collator = DataCollatorForText2DataLanguageModeling(
-                tokenizer=tokenizer, mlm=data_args.mlm, mlm_probability=data_args.mlm_probability
+                tokenizer=tokenizer,
+                mlm=data_args.mlm,
+                mlm_probability=data_args.mlm_probability,
             )
-        elif data_args.task_mode == 'gen_data':
+        elif data_args.task_mode == "gen_data":
             data_collator = DataCollatorForWeightedLanguageModeling(
-                tokenizer=tokenizer, mlm=data_args.mlm, mlm_probability=data_args.mlm_probability
+                tokenizer=tokenizer,
+                mlm=data_args.mlm,
+                mlm_probability=data_args.mlm_probability,
             )
         else:
             data_collator = DataCollatorForLanguageModeling(
-                tokenizer=tokenizer, mlm=data_args.mlm, mlm_probability=data_args.mlm_probability
+                tokenizer=tokenizer,
+                mlm=data_args.mlm,
+                mlm_probability=data_args.mlm_probability,
             )
         # data_collator = DataCollatorForWeightedLanguageModeling(
         #     tokenizer=tokenizer, mlm=data_args.mlm, mlm_probability=data_args.mlm_probability
         # )
 
-    if (model_args.tuning_mode == 'prefixtune'):
-
-        if data_args.distill == 'yes':
-
+    if model_args.tuning_mode == "prefixtune":
+        if data_args.distill == "yes":
             trainer = Trainer_Prefix(
                 model=model,
                 tokenizer=tokenizer,
@@ -942,11 +1053,11 @@ def main():
                 train_dataset=train_dataset,
                 eval_dataset=eval_dataset,
                 data_collator=data_collator,
-                task_mode =data_args.task_mode,
-                use_dropout=(model_args.use_dropout == 'yes'),
-                distill = True,
+                task_mode=data_args.task_mode,
+                use_dropout=(model_args.use_dropout == "yes"),
+                distill=True,
                 matching_objective=data_args.matching_objective,
-                finetuned_gpt2=finetuned_gpt2
+                finetuned_gpt2=finetuned_gpt2,
             )
 
         else:
@@ -959,12 +1070,11 @@ def main():
                 train_dataset=train_dataset,
                 eval_dataset=eval_dataset,
                 data_collator=data_collator,
-                task_mode =data_args.task_mode,
-                use_dropout=(model_args.use_dropout == 'yes'),
+                task_mode=data_args.task_mode,
+                use_dropout=(model_args.use_dropout == "yes"),
             )
 
     else:
-
         trainer = Trainer(
             model=model,
             tokenizer=tokenizer,
@@ -977,11 +1087,11 @@ def main():
 
     # Training
 
-
     if training_args.do_train:
         model_path = (
             model_args.model_name_or_path
-            if model_args.model_name_or_path is not None and os.path.isdir(model_args.model_name_or_path)
+            if model_args.model_name_or_path is not None
+            and os.path.isdir(model_args.model_name_or_path)
             else None
         )
 
@@ -992,11 +1102,11 @@ def main():
 
         trainer.train(model_path=model_path)
 
-        if 'lowdata' not in training_args.output_dir:
+        if "lowdata" not in training_args.output_dir:
             trainer.save_model()
 
-            if model_args.tuning_mode == 'bothtune':
-                gpt2_dir = os.path.join(training_args.output_dir, 'gpt2')
+            if model_args.tuning_mode == "bothtune":
+                gpt2_dir = os.path.join(training_args.output_dir, "gpt2")
                 gpt2.save_pretrained(gpt2_dir)
 
         # # For convenience, we also re-save the tokenizer to the same directory,
@@ -1026,128 +1136,129 @@ def main():
 
         results.update(result)
 
-
-    if 'lowdata' in training_args.output_dir:
-        print('evaluating the PPL on full dev data. ')
+    if "lowdata" in training_args.output_dir:
+        print("evaluating the PPL on full dev data. ")
         data_args.eval_data_file = "/u/scr/xlisali/e2e_data/src1_valid.txt"
         eval_dataset = (
-            get_dataset(data_args, tokenizer=tokenizer, evaluate=True, cache_dir=model_args.cache_dir,
-                        training_args=training_args, finetune_mode=(model_args.tuning_mode == 'finetune'))
+            get_dataset(
+                data_args,
+                tokenizer=tokenizer,
+                evaluate=True,
+                cache_dir=model_args.cache_dir,
+                training_args=training_args,
+                finetune_mode=(model_args.tuning_mode == "finetune"),
+            )
             if training_args.do_eval
             else None
         )
         print(len(eval_dataset))
         eval_output = trainer.evaluate(eval_dataset)
         perplexity = math.exp(eval_output["eval_loss"])
-        print('                full_dev_perplexity = {}'.format(perplexity))
-
-
+        print("                full_dev_perplexity = {}".format(perplexity))
 
         del model
         del trainer
         torch.cuda.empty_cache()
         # gpt2 = gpt2.cpu()
         elem = os.path.abspath(training_args.output_dir)
-        checkpoint_path = glob.glob(os.path.join(elem, '*checkpoint*'))
+        checkpoint_path = glob.glob(os.path.join(elem, "*checkpoint*"))
         assert len(checkpoint_path) == 1
         checkpoint_path = checkpoint_path[0]
 
-        print('running evaluation on ', checkpoint_path)
+        print("running evaluation on ", checkpoint_path)
 
         # os.system('python gen.py data2text yes valid {} no'.format(checkpoint_path))
         # os.system('python gen.py data2text yes test {} no'.format(checkpoint_path))
 
-    elif data_args.task_mode == 'data2text':
+    elif data_args.task_mode == "data2text":
         del model
         del trainer
-        if model_args.tuning_mode == 'prefixtune' or model_args.tuning_mode == 'bothtune' :
+        if (
+            model_args.tuning_mode == "prefixtune"
+            or model_args.tuning_mode == "bothtune"
+        ):
             del gpt2
         torch.cuda.empty_cache()
         elem = os.path.abspath(training_args.output_dir)
         checkpoint_path = elem
 
-        print('running evaluation on ', checkpoint_path)
-        print('suggested code:')
-        print('python gen.py data2text yes valid {} no'.format(checkpoint_path))
-        print('python gen.py data2text yes test {} no'.format(checkpoint_path))
+        print("running evaluation on ", checkpoint_path)
+        print("suggested code:")
+        print("python gen.py data2text yes valid {} no".format(checkpoint_path))
+        print("python gen.py data2text yes test {} no".format(checkpoint_path))
 
-        os.system('python gen.py data2text yes valid {} no'.format(checkpoint_path))
-        os.system('python gen.py data2text yes test {} no'.format(checkpoint_path))
+        os.system("python gen.py data2text yes valid {} no".format(checkpoint_path))
+        os.system("python gen.py data2text yes test {} no".format(checkpoint_path))
 
-        if 'earlystop' in  training_args.output_dir:
+        if "earlystop" in training_args.output_dir:
             elem = os.path.abspath(training_args.output_dir)
-            checkpoint_path = glob.glob(os.path.join(elem, '*checkpoint*'))
+            checkpoint_path = glob.glob(os.path.join(elem, "*checkpoint*"))
             assert len(checkpoint_path) == 1
             checkpoint_path = checkpoint_path[0]
 
-            print('running early stopping evaluation on ', checkpoint_path)
+            print("running early stopping evaluation on ", checkpoint_path)
 
-            os.system('python gen.py data2text yes valid {} no'.format(checkpoint_path))
-            os.system('python gen.py data2text yes test {} no'.format(checkpoint_path))
+            os.system("python gen.py data2text yes valid {} no".format(checkpoint_path))
+            os.system("python gen.py data2text yes test {} no".format(checkpoint_path))
 
-
-
-    elif data_args.task_mode == 'webnlg':
+    elif data_args.task_mode == "webnlg":
         del model
         del trainer
-        if model_args.tuning_mode == 'prefixtune':
+        if model_args.tuning_mode == "prefixtune":
             del gpt2
         torch.cuda.empty_cache()
         elem = os.path.abspath(training_args.output_dir)
         checkpoint_path = elem
 
-        print('running evaluation on ', checkpoint_path)
+        print("running evaluation on ", checkpoint_path)
 
-        print('python gen.py webnlg yes valid {} no'.format(checkpoint_path))
-        print('python gen.py webnlg yes test {} no'.format(checkpoint_path))
-        os.system('python gen.py webnlg yes valid {} no'.format(checkpoint_path))
-        os.system('python gen.py webnlg yes test {} no'.format(checkpoint_path))
-
+        print("python gen.py webnlg yes valid {} no".format(checkpoint_path))
+        print("python gen.py webnlg yes test {} no".format(checkpoint_path))
+        os.system("python gen.py webnlg yes valid {} no".format(checkpoint_path))
+        os.system("python gen.py webnlg yes test {} no".format(checkpoint_path))
 
         # also run for early stopping:
-        if 'earlystop' in  training_args.output_dir:
+        if "earlystop" in training_args.output_dir:
             elem = os.path.abspath(training_args.output_dir)
-            checkpoint_path = glob.glob(os.path.join(elem, '*checkpoint*'))
+            checkpoint_path = glob.glob(os.path.join(elem, "*checkpoint*"))
             assert len(checkpoint_path) == 1
             checkpoint_path = checkpoint_path[0]
 
-            print('running early stopping evaluation on ', checkpoint_path)
+            print("running early stopping evaluation on ", checkpoint_path)
 
-            print('python gen.py webnlg yes valid {} no'.format(checkpoint_path))
-            print('python gen.py webnlg yes test {} no'.format(checkpoint_path))
-            os.system('python gen.py webnlg yes valid {} no'.format(checkpoint_path))
-            os.system('python gen.py webnlg yes test {} no'.format(checkpoint_path))
-        
-        
-    elif data_args.task_mode == 'triples':
+            print("python gen.py webnlg yes valid {} no".format(checkpoint_path))
+            print("python gen.py webnlg yes test {} no".format(checkpoint_path))
+            os.system("python gen.py webnlg yes valid {} no".format(checkpoint_path))
+            os.system("python gen.py webnlg yes test {} no".format(checkpoint_path))
+
+    elif data_args.task_mode == "triples":
         del model
         del trainer
-        if model_args.tuning_mode == 'prefixtune':
+        if model_args.tuning_mode == "prefixtune":
             del gpt2
         torch.cuda.empty_cache()
         elem = os.path.abspath(training_args.output_dir)
         checkpoint_path = elem
 
-        print('running evaluation on ', checkpoint_path)
+        print("running evaluation on ", checkpoint_path)
 
-        print('python gen.py triples yes valid {} no'.format(checkpoint_path))
-        os.system('python gen.py triples yes valid {} no'.format(checkpoint_path))
-        os.system('python gen.py triples yes test {} no'.format(checkpoint_path))
+        print("python gen.py triples yes valid {} no".format(checkpoint_path))
+        os.system("python gen.py triples yes valid {} no".format(checkpoint_path))
+        os.system("python gen.py triples yes test {} no".format(checkpoint_path))
 
-
-        if 'earlystop' in  training_args.output_dir:
+        if "earlystop" in training_args.output_dir:
             elem = os.path.abspath(training_args.output_dir)
-            checkpoint_path = glob.glob(os.path.join(elem, '*checkpoint*'))
+            checkpoint_path = glob.glob(os.path.join(elem, "*checkpoint*"))
             assert len(checkpoint_path) == 1
             checkpoint_path = checkpoint_path[0]
 
-            print('running early stopping evaluation on ', checkpoint_path)
+            print("running early stopping evaluation on ", checkpoint_path)
 
-            os.system('python gen.py triples yes valid {} no'.format(checkpoint_path))
-            os.system('python gen.py triples yes test {} no'.format(checkpoint_path))
-
+            os.system("python gen.py triples yes valid {} no".format(checkpoint_path))
+            os.system("python gen.py triples yes test {} no".format(checkpoint_path))
 
     return results
+
 
 def _mp_fn(index):
     # For xla_spawn (TPUs)
@@ -1155,5 +1266,4 @@ def _mp_fn(index):
 
 
 if __name__ == "__main__":
-
     main()

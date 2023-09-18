@@ -51,9 +51,13 @@ def label_smoothed_nll_loss(lprobs, target, epsilon, ignore_index=-100):
     return loss, nll_loss
 
 
-def encode_line(tokenizer, line, max_length, pad_to_max_length=True, return_tensors="pt"):
+def encode_line(
+    tokenizer, line, max_length, pad_to_max_length=True, return_tensors="pt"
+):
     """Only used by LegacyDataset"""
-    extra_kw = {"add_prefix_space": True} if isinstance(tokenizer, BartTokenizer) else {}
+    extra_kw = (
+        {"add_prefix_space": True} if isinstance(tokenizer, BartTokenizer) else {}
+    )
     return tokenizer(
         [line],
         max_length=max_length,
@@ -135,15 +139,21 @@ class AbstractSeq2SeqDataset(Dataset):
         """Length in characters of target documents"""
         return self.get_char_lens(self.tgt_file)
 
-    def make_sortish_sampler(self, batch_size, distributed=False, shuffle=True, **kwargs):
+    def make_sortish_sampler(
+        self, batch_size, distributed=False, shuffle=True, **kwargs
+    ):
         if distributed:
-            return DistributedSortishSampler(self, batch_size, shuffle=shuffle, **kwargs)
+            return DistributedSortishSampler(
+                self, batch_size, shuffle=shuffle, **kwargs
+            )
         else:
             return SortishSampler(self.src_lens, batch_size, shuffle=shuffle)
 
     def make_dynamic_sampler(self, max_tokens_per_batch=1024, **kwargs):
         assert FAIRSEQ_AVAILABLE, "Dynamic batch size requires `pip install fairseq`"
-        assert not self.used_char_len, "You must call  python make_len_file.py before calling make_dynamic_sampler"
+        assert (
+            not self.used_char_len
+        ), "You must call  python make_len_file.py before calling make_dynamic_sampler"
         sorted_indices = list(self.make_sortish_sampler(1024, shuffle=False))
 
         def num_tokens_in_example(i):
@@ -156,9 +166,14 @@ class AbstractSeq2SeqDataset(Dataset):
             max_tokens=max_tokens_per_batch,
             required_batch_size_multiple=64,
         )
-        shuffled_batches = [batch_sampler[i] for i in np.random.permutation(range(len(batch_sampler)))]
+        shuffled_batches = [
+            batch_sampler[i] for i in np.random.permutation(range(len(batch_sampler)))
+        ]
         # move the largest batch to the front to OOM quickly (uses an approximation for padding)
-        approximate_toks_per_batch = [max(self.src_lens[i] for i in batch) * len(batch) for batch in shuffled_batches]
+        approximate_toks_per_batch = [
+            max(self.src_lens[i] for i in batch) * len(batch)
+            for batch in shuffled_batches
+        ]
         largest_batch_idx = np.argmax(approximate_toks_per_batch)
         shuffled_batches[0], shuffled_batches[largest_batch_idx] = (
             shuffled_batches[largest_batch_idx],
@@ -177,7 +192,9 @@ class LegacySeq2SeqDataset(AbstractSeq2SeqDataset):
     def __getitem__(self, index) -> Dict[str, torch.Tensor]:
         """Call tokenizer on src and tgt_lines"""
         index = index + 1  # linecache starts at 1
-        source_line = self.prefix + linecache.getline(str(self.src_file), index).rstrip("\n")
+        source_line = self.prefix + linecache.getline(str(self.src_file), index).rstrip(
+            "\n"
+        )
         tgt_line = linecache.getline(str(self.tgt_file), index).rstrip("\n")
         assert source_line, f"empty source line for index {index}"
         assert tgt_line, f"empty tgt line for index {index}"
@@ -199,7 +216,9 @@ class LegacySeq2SeqDataset(AbstractSeq2SeqDataset):
         target_ids = torch.stack([x["labels"] for x in batch])
         pad_token_id = self.pad_token_id
         y = trim_batch(target_ids, pad_token_id)
-        source_ids, source_mask = trim_batch(input_ids, pad_token_id, attention_mask=masks)
+        source_ids, source_mask = trim_batch(
+            input_ids, pad_token_id, attention_mask=masks
+        )
         batch = {
             "input_ids": source_ids,
             "attention_mask": source_mask,
@@ -213,13 +232,15 @@ class Seq2SeqDataset(AbstractSeq2SeqDataset):
 
     def __getitem__(self, index) -> Dict[str, str]:
         index = index + 1  # linecache starts at 1
-        source_line = self.prefix + linecache.getline(str(self.src_file), index).rstrip("\n")
+        source_line = self.prefix + linecache.getline(str(self.src_file), index).rstrip(
+            "\n"
+        )
         tgt_line = linecache.getline(str(self.tgt_file), index).rstrip("\n")
         assert source_line, f"empty source line for index {index}"
         assert tgt_line, f"empty tgt line for index {index}"
         return {"tgt_texts": tgt_line, "src_texts": source_line, "id": index - 1}
 
-    #LISA
+    # LISA
     def collate_fn(self, batch) -> Dict[str, torch.Tensor]:
         """Call prepare_seq2seq_batch."""
         batch_encoding: Dict[str, torch.Tensor] = self.tokenizer.prepare_seq2seq_batch(
@@ -263,9 +284,18 @@ def sortish_sampler_indices(data: List, bs: int, shuffle=True) -> np.array:
     sort_idx = np.concatenate([sorted(s, key=key_fn, reverse=True) for s in ck_idx])
     sz = bs
     ck_idx = [sort_idx[i : i + sz] for i in range(0, len(sort_idx), sz)]
-    max_ck = np.argmax([key_fn(ck[0]) for ck in ck_idx])  # find the chunk with the largest key,
-    ck_idx[0], ck_idx[max_ck] = ck_idx[max_ck], ck_idx[0]  # then make sure it goes first.
-    sort_idx = np.concatenate(np.random.permutation(ck_idx[1:])) if len(ck_idx) > 1 else np.array([], dtype=np.int)
+    max_ck = np.argmax(
+        [key_fn(ck[0]) for ck in ck_idx]
+    )  # find the chunk with the largest key,
+    ck_idx[0], ck_idx[max_ck] = (
+        ck_idx[max_ck],
+        ck_idx[0],
+    )  # then make sure it goes first.
+    sort_idx = (
+        np.concatenate(np.random.permutation(ck_idx[1:]))
+        if len(ck_idx) > 1
+        else np.array([], dtype=np.int)
+    )
     sort_idx = np.concatenate((ck_idx[0], sort_idx))
     return sort_idx
 
@@ -273,7 +303,15 @@ def sortish_sampler_indices(data: List, bs: int, shuffle=True) -> np.array:
 class DistributedSortishSampler(Sampler):
     """Copied from torch DistributedSampler"""
 
-    def __init__(self, dataset, batch_size, num_replicas=None, rank=None, add_extra_examples=True, shuffle=True):
+    def __init__(
+        self,
+        dataset,
+        batch_size,
+        num_replicas=None,
+        rank=None,
+        add_extra_examples=True,
+        shuffle=True,
+    ):
         if num_replicas is None:
             if not dist.is_available():
                 raise RuntimeError("Requires distributed package to be available")
@@ -287,7 +325,9 @@ class DistributedSortishSampler(Sampler):
         self.rank = rank
         self.epoch = 0
         if add_extra_examples:
-            self.num_samples = int(math.ceil(len(self.dataset) * 1.0 / self.num_replicas))
+            self.num_samples = int(
+                math.ceil(len(self.dataset) * 1.0 / self.num_replicas)
+            )
             self.total_size = self.num_samples * self.num_replicas
         else:
             self.total_size = len(dataset)
@@ -301,7 +341,9 @@ class DistributedSortishSampler(Sampler):
         g.manual_seed(self.epoch)
 
         sortish_data = [self.dataset.src_lens[i] for i in self.available_indices]
-        sortish_indices = sortish_sampler_indices(sortish_data, self.batch_size, shuffle=self.shuffle)
+        sortish_indices = sortish_sampler_indices(
+            sortish_data, self.batch_size, shuffle=self.shuffle
+        )
         indices = [self.available_indices[i] for i in sortish_indices]
         assert len(indices) == self.num_samples
         return iter(indices)
@@ -382,7 +424,9 @@ def get_git_info():
 ROUGE_KEYS = ["rouge1", "rouge2", "rougeL"]
 
 
-def calculate_rouge(output_lns: List[str], reference_lns: List[str], use_stemmer=True) -> Dict:
+def calculate_rouge(
+    output_lns: List[str], reference_lns: List[str], use_stemmer=True
+) -> Dict:
     scorer = rouge_scorer.RougeScorer(ROUGE_KEYS, use_stemmer=use_stemmer)
     aggregator = scoring.BootstrapAggregator()
 
@@ -415,7 +459,9 @@ def assert_all_frozen(model):
     model_grads: List[bool] = list(grad_status(model))
     n_require_grad = sum(lmap(int, model_grads))
     npars = len(model_grads)
-    assert not any(model_grads), f"{n_require_grad/npars:.1%} of {npars} weights require grad"
+    assert not any(
+        model_grads
+    ), f"{n_require_grad/npars:.1%} of {npars} weights require grad"
 
 
 def assert_not_all_frozen(model):
@@ -427,13 +473,17 @@ def assert_not_all_frozen(model):
 # CLI Parsing utils
 
 
-def parse_numeric_n_bool_cl_kwargs(unparsed_args: List[str]) -> Dict[str, Union[int, float, bool]]:
+def parse_numeric_n_bool_cl_kwargs(
+    unparsed_args: List[str],
+) -> Dict[str, Union[int, float, bool]]:
     """
     Parse an argv list of unspecified command line args to a dict.
     Assumes all values are either numeric or boolean in the form of true/false.
     """
     result = {}
-    assert len(unparsed_args) % 2 == 0, f"got odd number of unparsed args: {unparsed_args}"
+    assert (
+        len(unparsed_args) % 2 == 0
+    ), f"got odd number of unparsed args: {unparsed_args}"
     num_pairs = len(unparsed_args) // 2
     for pair_num in range(num_pairs):
         i = 2 * pair_num
@@ -446,7 +496,9 @@ def parse_numeric_n_bool_cl_kwargs(unparsed_args: List[str]) -> Dict[str, Union[
             try:
                 value = int(unparsed_args[i + 1])
             except ValueError:
-                value = float(unparsed_args[i + 1])  # this can raise another informative ValueError
+                value = float(
+                    unparsed_args[i + 1]
+                )  # this can raise another informative ValueError
 
         result[unparsed_args[i][2:]] = value
     return result
